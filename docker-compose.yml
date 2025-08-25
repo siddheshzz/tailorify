@@ -8,11 +8,13 @@ services:
       - "8000:8000"
     volumes:
       - .:/code          # Syncs your code into the container
-      - db_data:/code/app/app.db  # Persists the SQLite file
+      - db_data:/code/app/db_data 
     command: >
       sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/code
 
 
 volumes:
