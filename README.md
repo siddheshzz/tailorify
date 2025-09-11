@@ -3,7 +3,8 @@
 A modern, scalable FastAPI backend for a tailor cloth stitching service — supporting both web and mobile clients (Android/iOS). This system handles:
 
 - 🏠 Home, Register, and Login endpoints
-- 👕 Services for shirts, fittings, and more
+- 👕 Services for shirts stiching, fittings, and minute work.
+-  Email/SMS integration for notification or Bluetooth like service something like pager.
 - 💳 Payment integration (e.g., Stripe, Razorpay)
 - 🔐 JWT-based authentication
 - 🔁 RESTful APIs designed for frontend and mobile consumption
