@@ -18,3 +18,7 @@ def login(credentials: UserLogin):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     token = create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/logout", response_model=Token)
+def logout():
+    pass
