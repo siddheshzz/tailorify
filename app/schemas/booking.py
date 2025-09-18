@@ -7,7 +7,9 @@ class BookingBase(BaseModel):
     status: Optional[str] = "pending"
 
 class BookingCreate(BookingBase):
-    pass
+    service_id:int
+
+
 
 class BookingResponse(BookingBase):
     id: int

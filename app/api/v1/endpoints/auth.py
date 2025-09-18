@@ -19,6 +19,10 @@ def login(credentials: UserLogin):
     token = create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/logout", response_model=Token)
+
+@router.post("/logout")
 def logout():
-    pass
+    # Just tells client to delete token
+    return {"message": "Successfully logged out. Please remove token on client side."}
+
+    
