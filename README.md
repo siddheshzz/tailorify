@@ -95,3 +95,41 @@ tailor-backend/
 
 ```
 
+
+
+
+commands-
+
+```
+
+docker compose up --build
+
+
+In case of any requirement changes - 
+docker compose down --volumes
+docker compose build --no-cache
+docker compose up
+
+```
+
+
+
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzYzNjE2OTMyfQ.OwqCv6yfcjhMYttjxo6ogxG1yw4GlSyZyXhaw7VuKqc",
+  "token_type": "bearer"
+}
+
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzYzNjE3MDcwfQ.-HVEBCycp01hkdMVT36c1GGCs2Cm28G_60oTD2LqXNk",
+  "token_type": "bearer"
+}
+
+
+The db is created in container so we cannot see it.
+To view it you can go to docker - 
+
+docker exec -it 2e7cf9f471f4(this is container id) sh
+if sqlite is not installed - apt update && apt install -y sqlite3
+sqlite3 ./app/db_data/app.db
+.tables - to show tables
+

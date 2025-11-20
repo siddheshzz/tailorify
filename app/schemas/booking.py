@@ -8,6 +8,7 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     service_id:int
+    appointment_time: datetime
 
 
 
