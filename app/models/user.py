@@ -1,3 +1,4 @@
+from enum import Enum
 from sqlalchemy import Column, Integer, String
 from app.db.base import Base
 from sqlalchemy.orm import relationship
@@ -11,4 +12,5 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
+    role = Column(Enum("client", "tailor", "admin", name="roles"))
     bookings = relationship("Booking", back_populates="user")
