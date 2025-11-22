@@ -16,3 +16,4 @@ class Booking(Base):
     service = relationship("Service", back_populates="bookings")
 
     
+
