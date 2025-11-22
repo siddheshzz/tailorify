@@ -134,3 +134,5 @@ if sqlite is not installed - apt update && apt install -y sqlite3
 sqlite3 ./app/db_data/app.db
 .tables - to show tables
 
+
+Ok
