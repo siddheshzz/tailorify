@@ -1,4 +1,4 @@
-from app.db.base import Base, default_uuid, default_timestamp
+from app.models.base import Base, default_uuid, default_timestamp
 from sqlalchemy import Column, String
 
 class Gallery(Base):

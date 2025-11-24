@@ -1,13 +1,13 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, func
 from sqlalchemy.orm import relationship
-from app.db.base import Base
+from app.models.base import Base
 
 class Booking(Base):
     __tablename__ = "bookings"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    service_id = Column(Integer, ForeignKey("service.id"), nullable=False)
+    # user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # service_id = Column(Integer, ForeignKey("service.id"), nullable=False)
     status = Column(String(50), default="pending", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

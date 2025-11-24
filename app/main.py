@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.api.v1.endpoints import auth, booking, service
-from app.db.base import Base
+from app.models.base import Base
 from app.db.session import engine
 
 # Create DB tables

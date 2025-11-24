@@ -76,7 +76,7 @@
 
 
 
-from app.db.base import Base, default_uuid, default_timestamp
+from app.models.base import Base, default_uuid, default_timestamp
 from sqlalchemy import Column, String, Boolean, Enum
 from sqlalchemy.orm import relationship
 
@@ -101,8 +101,8 @@ class User(Base):
     updated_at = default_timestamp(update=True)
     
     # Relationships to other models (referenced as strings)
-    orders = relationship("Order", back_populates="client")
-    uploaded_images = relationship("OrderImage", back_populates="uploader")
+    # orders = relationship("Order", back_populates="client")
+    # uploaded_images = relationship("OrderImage", back_populates="uploader")
 
     def __repr__(self):
         return f"<User(email='{self.email}')>"

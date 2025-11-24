@@ -58,7 +58,7 @@
 #     def __repr__(self):
 #         return f"<Service(id='{self.id}', name='{self.name}', price={self.base_price})>"
 
-from app.db.base import Base, default_uuid, default_timestamp
+from app.models.base import Base, default_uuid, default_timestamp
 from sqlalchemy import Column, String, Integer, Boolean, Numeric
 from sqlalchemy.orm import relationship
 
