@@ -87,7 +87,7 @@ class User(Base):
     id = default_uuid()
     
     email = Column(String, unique=True, nullable=False, index=True) 
-    password_hash = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     phone = Column(String, nullable=True) 
@@ -101,8 +101,8 @@ class User(Base):
     updated_at = default_timestamp(update=True)
     
     # Relationships to other models (referenced as strings)
-    # orders = relationship("Order", back_populates="client")
-    # uploaded_images = relationship("OrderImage", back_populates="uploader")
+    orders = relationship("Order", back_populates="client")
+    uploaded_images = relationship("OrderImage", back_populates="uploader")
 
     def __repr__(self):
         return f"<User(email='{self.email}')>"

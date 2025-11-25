@@ -1,14 +1,15 @@
 from app.models.base import Base, default_uuid, default_timestamp
-from sqlalchemy import Column, String, Enum, ForeignKey, Numeric
+from sqlalchemy import Column, String, Enum, ForeignKey, Numeric,DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 
 class Order(Base):
     __tablename__ = "orders"
 
     id = default_uuid()
     
-    # Foreign Keys
+    # # Foreign Keys
     client_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("services.id"), nullable=False, index=True)
     

@@ -8,10 +8,7 @@ def create_user(user_data):
     time = datetime.now()
     user = User(
         email=user_data.email,
-        # full_name=user_data.full_name,
         hashed_password=get_password_hash(user_data.password),
-        # email = Column(String, unique=True, nullable=False, index=True) 
-        # password_hash = Column(String, nullable=False)
         first_name = user_data.first_name,
         last_name = user_data.last_name,
         user_type = 'client',
