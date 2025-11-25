@@ -18,12 +18,12 @@ def add_service(service: ServiceCreate, db: Session = Depends(get_db)):
 def list_services(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return get_services(db, skip, limit)
 
-@router.get("/{id}", response_model=List[ServiceResponse],dependencies=[Depends(JWTBearer())])
-def get_service(id,credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return get_service_by_id(id,db,skip,limit)
+@router.get("/{id}", response_model=ServiceResponse,dependencies=[Depends(JWTBearer())])
+def get_service(id, db: Session = Depends(get_db)):
+    return get_service_by_id(id,db)
 
-@router.put("/{id}", response_model=List[ServiceResponse],dependencies=[Depends(JWTBearer())])
-def update_service(id,credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return get_service_by_id(id,db,skip,limit)
+# @router.put("/{id}", response_model=ServiceResponse,dependencies=[Depends(JWTBearer())])
+# def update_service(id,skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+#     return get_service_by_id(id,db,skip,limit)
 
 
