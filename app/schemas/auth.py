@@ -19,11 +19,14 @@ class User(UserBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        # This setting is necessary for Pydantic to read data directly from
-        # SQLAlchemy models (which use dot notation for attribute access).
-        from_attributes = True # Pydantic v2
-        # or orm_mode = True # Pydantic v1
+    # class Config:
+    #     # This setting is necessary for Pydantic to read data directly from
+    #     # SQLAlchemy models (which use dot notation for attribute access).
+    #     from_attributes = True # Pydantic v2
+    #     # or orm_mode = True # Pydantic v1
+    model_config = {
+        "from_attributes": True  # replaces orm_mode=True in pydantic v2
+    }
 
     
 

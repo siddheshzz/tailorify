@@ -1,21 +1,23 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
+
 
 class BookingBase(BaseModel):
-    service_id: int
     status: Optional[str] = "pending"
 
 class BookingCreate(BookingBase):
-    service_id:int
+    service_id:UUID
     appointment_time: datetime
 
 
 
 class BookingResponse(BookingBase):
-    id: int
-    user_id: int
+    id: UUID
+    user_id: UUID
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True  # replaces orm_mode=True in pydantic v2
+    }
