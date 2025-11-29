@@ -55,4 +55,11 @@ def update_user_self_service(db:Session,id,payload:UserUpdateSelf):
     return user
 
 
+def delete_user_service(db:Session,id):
+    user = db.query(User).filter(User.id == id).first()
+
+    db.delete(user)
+    db.commit()
+
+    return True
 

@@ -95,3 +95,25 @@ class JWTBearer(HTTPBearer):
             isTokenValid = True
 
         return payload
+
+from fastapi import Depends, HTTPException, status
+from typing import List
+
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[str]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, payload: dict = Depends(JWTBearer())):
+        
+        # Extract the role from the token payload
+        user_role = payload.get("user_type")
+
+        if user_role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Operation not permitted: Insufficient privileges"
+            )
+        
+        # If successful, return the payload (or the user object if you prefer)
+        return payload

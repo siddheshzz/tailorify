@@ -17,5 +17,5 @@ def upload_image(order_id, file: UploadFile = File(...), db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Order not found")
 
     # Upload image
-    saved_image = upload_order_image(db, order_id, file)
+    saved_image = upload_order_image(db, order_id, file, order)
     return saved_image

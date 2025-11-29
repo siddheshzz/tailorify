@@ -24,12 +24,12 @@ def update_user(id,payload : UserUpdateSelf, db: Session = Depends(get_db)):
     
     return updated
 
-# @router.delete("/{order_id}", status_code=204,dependencies=[Depends(JWTBearer())])
-# def delete_order(order_id,db: Session = Depends(get_db)):
-#     deleted = delete_order_service(db,order_id)
+@router.delete("/{order_id}", status_code=204,dependencies=[Depends(JWTBearer(),Depends(allow_admin))])
+def delete_order(order_id,db: Session = Depends(get_db)):
+    deleted = delete_order_service(db,order_id)
 
-#     if not deleted:
-#         raise HTTPException(status_code=404, detail="Order not found")
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Order not found")
     
-#     return
+    return
 
