@@ -39,7 +39,7 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
 
-    user_email = payload["sub"]
+    user_email = payload["user_email"]
 
     
     if not user_email:

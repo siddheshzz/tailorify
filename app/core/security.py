@@ -2,6 +2,7 @@ from typing import Annotated
 # from fastapi import Depends, HTTP
 from passlib.context import CryptContext
 from jose import jwt,JWTError
+from app.schemas.user import UserAuthPayload
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
 
@@ -47,7 +48,7 @@ def decode_access_token(token):
 
 # app/auth/auth_bearer.py
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
@@ -117,3 +118,37 @@ class RoleChecker:
         
         # If successful, return the payload (or the user object if you prefer)
         return payload
+    
+
+
+# Assuming you have a Pydantic model for the current user's data
+# You'll need to define this in your user/schemas.py or similar file
+# Example Pydantic Model (define this elsewhere):
+# class CurrentUser(BaseModel):
+#     id: int
+#     email: str
+#     user_type: str  # Role
+
+
+# Ensure JWTBearer and decode_access_token are imported
+# from .auth.auth_bearer import JWTBearer 
+
+# Define the structure for the user object you want to inject
+# We can just return the dictionary for simplicity, but a Pydantic model is better.
+def get_current_user(payload: dict = Depends(JWTBearer())) -> UserAuthPayload:
+    
+    user_id = payload.get("user_id")
+    user_type = payload.get("user_type")
+    user_email = payload.get("user_email")
+
+    if not user_id or not user_type:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Token payload is missing required user identity fields."
+        )
+    test = UserAuthPayload(
+        id=user_id,
+        email = user_email,
+        user_type=user_type,
+    )
+    return test

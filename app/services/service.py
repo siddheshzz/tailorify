@@ -10,7 +10,9 @@ def create_service(db: Session, service: ServiceCreate):
     return db_service
 
 def get_services(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(Service).offset(skip).limit(limit).all()
+    result = db.query(Service).offset(skip).limit(limit).all()
+    print("Database Query Result:", result) # <-- Add this line
+    return result
 
 
 def get_service_by_id(id,db: Session, skip: int = 0, limit: int = 10):

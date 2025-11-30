@@ -79,3 +79,11 @@ class UserResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+from uuid import UUID
+
+class UserAuthPayload(BaseModel):
+    id: str
+    email: Optional[EmailStr] = None
+    user_type: str

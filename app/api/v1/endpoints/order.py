@@ -1,9 +1,9 @@
-from app.core.security import JWTBearer, decode_access_token,RoleChecker
+from app.core.security import JWTBearer, decode_access_token,RoleChecker, get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from app.schemas.order import OrderCreate, OrderResponse
-from app.services.order_service import create_order_service, get_orders, get_order_by_id, update_order_service,delete_user_service
+from app.services.order_service import create_order_service, get_order_by_id_me, get_orders, get_order_by_id, get_orders_me, update_order_service,delete_user_service
 from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -19,11 +19,19 @@ def create_order(service: OrderCreate, db: Session = Depends(get_db)):
     return create_order_service(db, service)
 
 
-@router.get("/", response_model=List[OrderResponse],dependencies=[Depends(JWTBearer())])
+@router.get("/", response_model=List[OrderResponse],dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
 def list_order(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return get_orders(db, skip, limit)
 
-@router.get("/{order_id}", response_model=OrderResponse,dependencies=[Depends(JWTBearer())])
+@router.get("/me", response_model=List[OrderResponse],dependencies=[Depends(JWTBearer())])
+def list_order_me(skip: int = 0, limit: int = 10, db: Session = Depends(get_db),current_user = Depends(get_current_user)):
+    return get_orders_me(db,current_user.id, skip, limit)
+
+@router.get("/me/{order_id}", response_model=OrderResponse,dependencies=[Depends(JWTBearer())])
+def get_order_me(order_id, db: Session = Depends(get_db),current_user = Depends(get_current_user)):
+    return get_order_by_id_me(order_id,db,current_user.id)
+
+@router.get("/{order_id}", response_model=OrderResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
 def get_order(order_id, db: Session = Depends(get_db)):
     return get_order_by_id(order_id,db)
 
@@ -36,7 +44,7 @@ def update_order(order_id,payload : OrderCreate, db: Session = Depends(get_db)):
     
     return updated
 
-@router.delete("/{order_id}", status_code=204,dependencies=[Depends(JWTBearer(),Depends(allow_admin))])
+@router.delete("/{order_id}", status_code=204,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
 def delete_order(order_id,db: Session = Depends(get_db)):
     deleted = delete_user_service(db,order_id)
 

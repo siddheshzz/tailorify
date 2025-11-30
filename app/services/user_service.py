@@ -3,7 +3,7 @@ from app.db.session import SessionLocal
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash, verify_password, create_access_token
 from datetime import datetime
-from app.schemas.user import UserUpdateSelf
+from app.schemas.user import UserUpdateAdmin, UserUpdateSelf
 
 
 def create_user(user_data):
@@ -40,7 +40,26 @@ def get_user_service(db:Session, id):
     user = db.query(User).filter(User.id == id).first()
     return user
 
+# def get_this_user_service(db:Session, id):
+
+#     user = db.query(User).filter(User.id == id).first()
+#     return user
+
 def update_user_self_service(db:Session,id,payload:UserUpdateSelf):
+
+    user = db.query(User).filter(User.id == id).first()
+
+    if not user:
+        return None
+
+    for field, value in payload.dict().items():
+        setattr(user, field, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_user_admin_service(db:Session,id,payload:UserUpdateAdmin):
 
     user = db.query(User).filter(User.id == id).first()
 

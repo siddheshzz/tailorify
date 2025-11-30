@@ -8,7 +8,7 @@ from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-allow_admin = RoleChecker("admin")
+allow_admin = RoleChecker(["admin"])
 router = APIRouter()
 security = HTTPBearer()
 
