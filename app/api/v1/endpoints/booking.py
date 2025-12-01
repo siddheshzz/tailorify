@@ -12,7 +12,7 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.security import SECRET_KEY, ALGORITHM, JWTBearer, decode_access_token
 from app.core.security import create_access_token
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 # TODO: replace with real JWT auth
 # def get_current_user(token:str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:

@@ -14,4 +14,4 @@ def save_order_image(order_id, file) -> str:
     with open(path, "wb") as buffer:
         buffer.write(file.file.read())
 
-    return path, unique_name
+    return path

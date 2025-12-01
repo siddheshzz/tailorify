@@ -136,3 +136,14 @@ sqlite3 ./app/db_data/app.db
 
 
 Ok
+
+
+Todo-
+
+check on delete all the related should also get deleted
+
+booking
+async
+email
+sms
+aws s3

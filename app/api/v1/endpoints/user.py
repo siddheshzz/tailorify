@@ -1,5 +1,5 @@
 from app.core.security import JWTBearer,RoleChecker, decode_access_token, get_current_user
-from app.services.order_service import delete_user_service
+from app.services.user_service import delete_user_service
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
