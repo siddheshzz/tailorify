@@ -15,8 +15,9 @@ class OrderBase(BaseModel):
 class OrderCreate(OrderBase):
     client_id: UUID
     service_id: UUID
-    quoted_price: Decimal
-    description: str
+
+# class OrderUpdateIMG(OrderBase):
+#     im
 
 class OrderResponse(OrderBase):
     id: UUID

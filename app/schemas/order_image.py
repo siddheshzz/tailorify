@@ -20,3 +20,7 @@ class OrderImageResponse(OrderImageBase):
 
     class Config:
         orm_mode = True
+
+
+class ImageUploadConfirmation(BaseModel):
+    s3_object_path: str

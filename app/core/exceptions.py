@@ -19,3 +19,8 @@ class InsufficientPrivilegesError(AppBaseException):
     def __init__(self, message="Insufficient privileges"):
         self.message = message
         super().__init__(self.message)
+
+
+
+class S3ObjectDoesntExistException(Exception):
+    pass

@@ -79,7 +79,7 @@ As a developer, I want to connect to PostgreSQL so I can store application data.
 
 ---
 
-### 06. Set up Alembic for database migrations
+# 06. Set up Alembic for database migrations
 
 **User Story:**  
 As a developer, I want to manage database schema changes with Alembic.
@@ -94,7 +94,7 @@ As a developer, I want to manage database schema changes with Alembic.
 
 ---
 
-### 07. Configure logging for FastAPI
+# 07. Configure logging for FastAPI
 
 **User Story:**  
 As a developer, I want to log key events and errors so I can monitor and debug the application.

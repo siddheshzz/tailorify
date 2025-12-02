@@ -1,16 +1,19 @@
+from uuid import UUID
 from app.core.exceptions import DuplicateResourceError, InternalDatabaseError
+from app.core.s3_api import generate_presigned_upload_url
 from app.core.security import JWTBearer, decode_access_token,RoleChecker, get_current_user
 from app.schemas.order_image import OrderImageResponse
+from app.schemas.s3 import UploadUrlSchemaOut
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from app.schemas.order import OrderCreate, OrderResponse
 from app.services.order_service import create_order_service, get_order_by_id_me, get_orders, get_order_by_id, get_orders_me, update_order_service,delete_order_service
 from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.services.image_service import upload_order_image
-from app.schemas.order_image import OrderImageResponse
+from app.schemas.order_image import OrderImageResponse,ImageUploadConfirmation
 
 
 
@@ -134,3 +137,59 @@ def delete_order(order_id,db: Session = Depends(get_db)):
             detail="An unexpected database error occurred during order deletion."
         )
 
+
+
+
+
+
+
+@router.get("/{order_id}/generate-upload-url")
+async def get_upload_image(order_id, file_extension: Optional[str] = None,content_type: Optional[str] = "image/jpeg", db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    
+    # Check order exists
+    order = get_order_by_id(order_id,db)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.client_id != UUID(current_user.id):
+        raise HTTPException(status_code=404, detail="Not your order")
+    
+    
+    url_data = await generate_presigned_upload_url()
+
+    return url_data
+
+
+
+
+# @router.post("/{order_id}/generate-upload-url", response_model=OrderImageResponse)
+# def upload_final_post_image(order_id,payload: dict,db: Session = Depends(get_db)):
+#     pass
+
+
+# @router.post("/{order_id}/confirm-upload")
+# def confirm_image_upload(
+#     order_id: str,
+#     payload: ImageUploadConfirmation,
+#     db: Session = Depends(get_db),
+#     current_user = Depends(get_current_user)
+# ):
+#     # Verify order exists and belongs to user
+#     order = get_order_by_id(db, order_id)
+#     if not order:
+#         raise HTTPException(status_code=404, detail="Order not found")
+    
+#     if order.client_id != UUID(current_user.user_id):
+#         raise HTTPException(status_code=403, detail="Not your order")
+    
+#     # Save the image record to database
+#     # You'll need to create this service function
+#     from app.services.image_service import save_order_image_record
+    
+#     saved_image = save_order_image_record(
+#         db=db,
+#         order_id=order_id,
+#         s3_object_path=payload.s3_object_path
+#     )
+    
+#     return saved_image

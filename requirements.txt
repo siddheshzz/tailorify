@@ -9,3 +9,5 @@ pydantic[email]
 psycopg2-binary
 python-multipart
 pytest
+minio>=7.2.13
+pydantic-settings>=2.7.1
