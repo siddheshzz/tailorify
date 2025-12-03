@@ -23,7 +23,7 @@ class OrderImage(Base):
     uploaded_at = default_timestamp()
     
     # Relationships
-    order = relationship("Order", back_populates="images")
+    orders = relationship("Order", back_populates="images")
     uploader = relationship("User", back_populates="uploaded_images")
 
     def __repr__(self):

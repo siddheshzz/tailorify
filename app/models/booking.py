@@ -15,7 +15,7 @@ class Booking(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # # Relationships (optional, but useful for joins)
-    user = relationship("User", back_populates="bookings")
+    users = relationship("User", back_populates="bookings")
     service = relationship("Service", back_populates="bookings")
 
     

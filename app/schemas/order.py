@@ -16,8 +16,8 @@ class OrderCreate(OrderBase):
     client_id: UUID
     service_id: UUID
 
-# class OrderUpdateIMG(OrderBase):
-#     im
+# class OrderUpdateImage(OrderCreate):
+#     i
 
 class OrderResponse(OrderBase):
     id: UUID

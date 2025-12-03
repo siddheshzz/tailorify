@@ -24,3 +24,4 @@ class OrderImageResponse(OrderImageBase):
 
 class ImageUploadConfirmation(BaseModel):
     s3_object_path: str
+    uploaded_by: UUID

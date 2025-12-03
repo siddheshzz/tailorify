@@ -167,29 +167,33 @@ async def get_upload_image(order_id, file_extension: Optional[str] = None,conten
 #     pass
 
 
-# @router.post("/{order_id}/confirm-upload")
-# def confirm_image_upload(
-#     order_id: str,
-#     payload: ImageUploadConfirmation,
-#     db: Session = Depends(get_db),
-#     current_user = Depends(get_current_user)
-# ):
-#     # Verify order exists and belongs to user
-#     order = get_order_by_id(db, order_id)
-#     if not order:
-#         raise HTTPException(status_code=404, detail="Order not found")
+@router.post("/{order_id}/confirm-upload")
+def confirm_image_upload(
+    order_id: str,
+    payload: ImageUploadConfirmation,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    # Verify order exists and belongs to user
+    order = get_order_by_id(UUID(order_id),db)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     
-#     if order.client_id != UUID(current_user.user_id):
-#         raise HTTPException(status_code=403, detail="Not your order")
+    if order.client_id != UUID(current_user.id):
+        raise HTTPException(status_code=403, detail="Not your order")
     
-#     # Save the image record to database
-#     # You'll need to create this service function
-#     from app.services.image_service import save_order_image_record
+    # Save the image record to database
+    # You'll need to create this service function
+    from app.services.image_service import save_order_image_record
     
-#     saved_image = save_order_image_record(
-#         db=db,
-#         order_id=order_id,
-#         s3_object_path=payload.s3_object_path
-#     )
+    saved_image = save_order_image_record(
+        db=db,
+        order_id=order_id,
+        s3_object_path=payload.s3_object_path,
+        uploaded_by=payload.uploaded_by
+    )
+
+    # update = update_order_service_with_image(db, UUID(order_id), payload)
+
     
-#     return saved_image
+    return saved_image

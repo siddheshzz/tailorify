@@ -21,3 +21,18 @@ def upload_order_image(db: Session, order_id, file,order:OrderCreate):
     db.refresh(db_image)
 
     return db_image
+
+def save_order_image_record(db:Session, order_id,s3_object_path,uploaded_by):
+    db_image = OrderImage(
+        order_id=order_id,
+        s3_url=s3_object_path,
+        image_type="before",
+        uploaded_by=uploaded_by
+        
+    )
+    db.add(db_image)
+    db.commit()
+    db.refresh(db_image)
+
+
+    return db_image

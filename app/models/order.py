@@ -37,7 +37,7 @@ class Order(Base):
     # Relationships (Bidirectional, referenced as strings)
     client = relationship("User", back_populates="orders")
     service = relationship("Service", back_populates="orders")
-    images = relationship("OrderImage", back_populates="order")
+    images = relationship("OrderImage", back_populates="orders")
     
 
     def __repr__(self):
