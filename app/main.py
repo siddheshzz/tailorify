@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.api.v1.endpoints import auth, booking, service, order, user, order_image
 from app.models.base import Base
+from fastapi.middleware.cors import CORSMiddleware
 import app.models
 from app.db.session import engine
 
@@ -8,6 +9,18 @@ from app.db.session import engine
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mount API
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
