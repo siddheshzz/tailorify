@@ -1,4 +1,4 @@
 # requirements-dev.txt
 pytest
 pytest-cov
-httpx
+http
