@@ -14,10 +14,7 @@ security = HTTPBearer()
 allow_admin = RoleChecker(["admin"])
 
 
-#MAKE SURE THE USER CAN GET ONLY AND INLY HIS OWN ACCOUNT NOT OTHERS
-@router.get("/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
-def get_user(id,current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return get_user_service(db,id)
+
 
 @router.get("/me", response_model=UserResponse,dependencies=[Depends(JWTBearer())])
 def get_me_user(current_user: UserAuthPayload = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -32,6 +29,11 @@ def update_me(id,payload : UserUpdateSelf, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     
     return updated
+
+#MAKE SURE THE USER CAN GET ONLY AND INLY HIS OWN ACCOUNT NOT OTHERS
+@router.get("/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
+def get_user(id,current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    return get_user_service(db,id)
 
 @router.put("/me/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
 def update_user(id,payload : UserUpdateAdmin, db: Session = Depends(get_db)):
@@ -50,4 +52,6 @@ def delete_user(order_id,db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Order not found")
     
     return
+
+
 
