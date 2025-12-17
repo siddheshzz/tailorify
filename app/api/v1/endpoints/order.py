@@ -1,7 +1,8 @@
 from uuid import UUID
 from app.core.exceptions import DuplicateResourceError, InternalDatabaseError
-from app.core.s3_api import generate_presigned_upload_url
+from app.core.s3_api import generate_download_url, generate_presigned_upload_url
 from app.core.security import JWTBearer, decode_access_token,RoleChecker, get_current_user
+from app.models.order_image import OrderImage
 from app.schemas.order_image import OrderImageResponse
 from app.schemas.s3 import UploadUrlSchemaOut
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
@@ -159,16 +160,29 @@ async def get_upload_image(order_id, file_extension: Optional[str] = None,conten
 
     return url_data
 
+@router.get("/{order_id}/generate-download-url")
+async def get_download_image(order_id, file_extension: Optional[str] = None,content_type: Optional[str] = "image/jpeg", db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    
+    # Check order exists
+    order = get_order_by_id(order_id,db)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.client_id != UUID(current_user.id):
+        raise HTTPException(status_code=404, detail="Not your order")
+    
+    images = db.query(OrderImage).filter(OrderImage.order_id == UUID(order_id)).all()
+    
+    
+    download_link = await generate_download_url(images.s3_url) #this might me wrong cause we can have multiple images 
+
+    return download_link
 
 
-
-# @router.post("/{order_id}/generate-upload-url", response_model=OrderImageResponse)
-# def upload_final_post_image(order_id,payload: dict,db: Session = Depends(get_db)):
-#     pass
 
 
 @router.post("/{order_id}/confirm-upload")
-def confirm_image_upload(
+async def confirm_image_upload(
     order_id: str,
     payload: ImageUploadConfirmation,
     db: Session = Depends(get_db),
@@ -186,90 +200,46 @@ def confirm_image_upload(
     # You'll need to create this service function
     from app.services.image_service import save_order_image_record
     
-    saved_image = save_order_image_record(
+    # saved_image = save_order_image_record(
+    #     db=db,
+    #     order_id=order_id,
+    #     s3_object_path=payload.s3_object_path,
+    #     uploaded_by=payload.uploaded_by
+    # )
+
+    saved_image = await save_order_image_record(  # Add await
         db=db,
         order_id=order_id,
         s3_object_path=payload.s3_object_path,
-        uploaded_by=payload.uploaded_by
+        uploaded_by=str(payload.uploaded_by),
+        image_type=payload.image_type 
     )
 
     # update = update_order_service_with_image(db, UUID(order_id), payload)
 
     
     return saved_image
+@router.get("/{order_id}/images", response_model=List[OrderImageResponse])
+async def get_order_images(
+    order_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Get all images for an order"""
+    from app.models.order_image import OrderImage
+    from uuid import UUID
+    
+    # Verify order exists
+    order = get_order_by_id(UUID(order_id), db)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Get all images for this order
+    images = db.query(OrderImage).filter(OrderImage.order_id == UUID(order_id)).all()
 
-
-from fastapi.responses import HTMLResponse
-
-@router.get("/{order_id}/upload-test", response_class=HTMLResponse)
-def upload_test_page(order_id: str):
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>S3 Upload Test</title>
-    </head>
-    <body>
-        <h1>Upload Image for Order {order_id}</h1>
-        <button onclick="uploadFile()">Select and Upload File</button>
-        <div id="status"></div>
-        
-        <script>
-            async function uploadFile() {{
-                const orderId = '{order_id}';
-                const status = document.getElementById('status');
-                
-                // Step 1: Get presigned URL
-                status.innerHTML = 'Getting upload URL...';
-                const urlResponse = await fetch(`/orders/${{orderId}}/generate-upload-url`, {{
-                    headers: {{
-                        'Authorization': 'Bearer YOUR_TOKEN_HERE'
-                    }}
-                }});
-                const {{ url, s3_object_path }} = await urlResponse.json();
-                
-                // Step 2: Select file
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = async (e) => {{
-                    const file = e.target.files[0];
-                    status.innerHTML = 'Uploading to S3...';
-                    
-                    // Step 3: Upload to S3
-                    const uploadResponse = await fetch(url, {{
-                        method: 'PUT',
-                        body: file,
-                        headers: {{
-                            'Content-Type': file.type
-                        }}
-                    }});
-                    
-                    if (uploadResponse.ok) {{
-                        status.innerHTML = 'Confirming upload...';
-                        
-                        // Step 4: Confirm with backend
-                        const confirmResponse = await fetch(`/orders/${{orderId}}/confirm-upload`, {{
-                            method: 'POST',
-                            headers: {{
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer YOUR_TOKEN_HERE'
-                            }},
-                            body: JSON.stringify({{ s3_object_path }})
-                        }});
-                        
-                        if (confirmResponse.ok) {{
-                            status.innerHTML = 'Upload successful!';
-                        }} else {{
-                            status.innerHTML = 'Confirmation failed!';
-                        }}
-                    }} else {{
-                        status.innerHTML = 'Upload to S3 failed!';
-                    }}
-                }};
-                input.click();
-            }}
-        </script>
-    </body>
-    </html>
-    """
+    # Refresh download URLs (they expire after 6 hours)
+    for image in images:
+        fresh_url_response = await generate_download_url(image.s3_object_path)
+        image.s3_url = fresh_url_response.download_link
+    
+    return images

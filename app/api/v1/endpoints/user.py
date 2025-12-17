@@ -1,5 +1,5 @@
 from app.core.security import JWTBearer,RoleChecker, decode_access_token, get_current_user
-from app.services.user_service import delete_user_service
+from app.services.user_service import delete_user_service, get_all_user_service
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
@@ -21,7 +21,7 @@ def get_me_user(current_user: UserAuthPayload = Depends(get_current_user), db: S
     return get_user_service(db,current_user.id)
 
 
-@router.put("/me/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer())])
+@router.put("/me", response_model=UserResponse,dependencies=[Depends(JWTBearer())])
 def update_me(id,payload : UserUpdateSelf, db: Session = Depends(get_db)):
     updated = update_user_self_service(db,id,payload)
 
@@ -35,7 +35,11 @@ def update_me(id,payload : UserUpdateSelf, db: Session = Depends(get_db)):
 def get_user(id,current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_user_service(db,id)
 
-@router.put("/me/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
+@router.get("/", response_model=List[UserResponse],dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
+def get_users( db: Session = Depends(get_db)):
+    return get_all_user_service(db)
+
+@router.put("/{id}", response_model=UserResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
 def update_user(id,payload : UserUpdateAdmin, db: Session = Depends(get_db)):
     updated = update_user_admin_service(db,id,payload)
 

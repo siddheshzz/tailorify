@@ -1,14 +1,30 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.v1.endpoints import auth, booking, service, order, user, order_image
 from app.models.base import Base
 from fastapi.middleware.cors import CORSMiddleware
 import app.models
-from app.db.session import engine
+from app.db.session import create_db_tables, engine
 
 # Create DB tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup
+#     create_db_tables()
+#     async with engine.begin() as conn:
+#         await conn.run_sync(Base.metadata.create_all)
+#     yield
+#     # Shutdown (optional cleanup)
+
+@asynccontextmanager
+async def lifespan_handler(app: FastAPI):
+    await create_db_tables()
+    yield
+
+    
+app = FastAPI(lifespan=lifespan_handler)
 
 origins = [
     "http://localhost:3000",

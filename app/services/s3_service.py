@@ -211,8 +211,16 @@ class S3Service:
         Returns:
         - (tuple(str, str)): The pre-signed URL for file upload and s3_object_path
         """
+        # if s3_object_path is None:
+        #     s3_object_path = self.__generate_upload_path_with_file_name()
+
         if s3_object_path is None:
-            s3_object_path = self.__generate_upload_path_with_file_name()
+        # Generate path with extension if provided
+            if file_extension:
+                s3_object_path = self.__generate_upload_path() + str(uuid.uuid4()) + file_extension
+            else:
+                s3_object_path = self.__generate_upload_path_with_file_name()
+    
         try:
             presigned_url = self.minio_client.presigned_put_object(
                 bucket_name=self.storage_configuration.S3_BUCKET_NAME,
