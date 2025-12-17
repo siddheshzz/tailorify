@@ -39,7 +39,6 @@ python-multipart
 
 # Storage
 minio>=7.2.13
-
-# Testing
-pytest
+pydantic-settings>=2.7.1
 pytest-mock
+httpx
