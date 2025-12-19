@@ -1,23 +1,65 @@
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from app.models.service import Service
 from app.schemas.service import ServiceCreate
-
-def create_service(db: Session, service: ServiceCreate):
-    db_service = Service(**service.dict())
-    db.add(db_service)
-    db.commit()
-    db.refresh(db_service)
-    return db_service
-
-def get_services(db: Session, skip: int = 0, limit: int = 10):
-    result = db.query(Service).offset(skip).limit(limit).all()
-    print("Database Query Result:", result) # <-- Add this line
-    return result
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def get_service_by_id(id,db: Session, skip: int = 0, limit: int = 10):
-    service = db.query(Service).filter(Service.id == id).first()
-    # if service is None:
-    #     raise HTTPException(status_code=404,detail="User not found")
-    return service
+class ServiceService:
+    def __init__(self, session: AsyncSession):
+        # Get database session to perform database operations
+        self.session = session
+
+    async def get(self):
+        services = await self.session.execute(select(Service))
+        return services.scalars().all()
+    
+    async def getId(self,id):
+        service = await self.session.execute(select(Service).filter(Service.id == id))
+        return service.scalar()
+
+    async def add(self,service)-> Service:
+        ser = Service(**service.model_dump())
+
+        self.session.add(ser)
+
+        await self.session.commit()
+        await self.session.refresh(ser)
+
+        return ser
+    async def remove(self,id):
+        result = await self.session.execute(select(Service).filter(Service.id == id))
+        
+        service = result.scalar_one_or_none()
+        if not service:
+            return False
+        await self.session.delete(service)
+        await self.session.commit()
+
+        return True
+    
+    async def update(self, id,updateService):
+        res = await self.getId(id)
+
+        if res is None:
+            return None
+        
+        data = updateService.model_dump(exclude_unset=True)
+
+        for field, value in data.items():
+            setattr(res,field,value)
+
+        await self.session.commit()
+        await self.session.refresh(res)
+
+        return res
+
+        # stmt = (
+        # update(Service)
+        # .where(Service.id == id)
+        # .values(**updateService.model_dump())
+        # .execution_options(synchronize_session="fetch")
+        # )
+
+        # result = await self.session.execute(stmt)
 

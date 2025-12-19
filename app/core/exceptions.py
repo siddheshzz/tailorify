@@ -2,6 +2,12 @@ class AppBaseException(Exception):
     """Base class for all custom application exceptions."""
     pass
 
+
+class OrderNotFoundError(AppBaseException):
+    def __init__(self, message="Order not found"):
+        self.message = message
+        super().__init__(self.message)
+
 class DuplicateResourceError(AppBaseException):
     """Raised when an attempt is made to create a resource that already exists."""
     def __init__(self, message="Resource already exists"):
@@ -19,6 +25,13 @@ class InsufficientPrivilegesError(AppBaseException):
     def __init__(self, message="Insufficient privileges"):
         self.message = message
         super().__init__(self.message)
+
+
+class DatabaseCommunicationError(AppBaseException):
+    def __init__(self, message="Database communication error"):
+        self.message = message
+        super().__init__(self.message)
+
 
 
 

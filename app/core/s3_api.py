@@ -1,4 +1,6 @@
+from app.core.exceptions import S3ObjectDoesntExistException
 from app.schemas.s3 import (
+    DownloanLinkSchemaOut,
     UploadUrlSchemaOut,
 )
 
@@ -13,3 +15,11 @@ async def generate_presigned_upload_url(file_extension: str = "",
     url, s3_object_path = s3_service.generate_presigned_upload_url()
     return UploadUrlSchemaOut(url=url, s3_object_path=s3_object_path)
 
+
+async def generate_download_url(
+   file_path: str,
+) -> DownloanLinkSchemaOut:
+   """Generate presigned url for file download from S3 storage."""
+   s3_service: S3Service = S3Service()
+   download_link: str = s3_service.generate_download_url(file_path)
+   return DownloanLinkSchemaOut(download_link=download_link)

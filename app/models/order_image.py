@@ -14,6 +14,7 @@ class OrderImage(Base):
     
     # Details
     s3_url = Column(String, nullable=False)
+    s3_object_path = Column(String, nullable=False)
     image_type = Column(
         Enum('before', 'after', 'reference', 'instruction', name='image_type_enum'),
         nullable=False

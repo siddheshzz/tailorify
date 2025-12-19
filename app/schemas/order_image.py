@@ -15,6 +15,7 @@ class OrderImageResponse(OrderImageBase):
     id: UUID
     order_id: UUID
     uploaded_by: UUID
+    s3_object_path: str 
     s3_url: str
     uploaded_at: datetime
 
@@ -25,3 +26,4 @@ class OrderImageResponse(OrderImageBase):
 class ImageUploadConfirmation(BaseModel):
     s3_object_path: str
     uploaded_by: UUID
+    image_type: Literal['before', 'after', 'reference', 'instruction']

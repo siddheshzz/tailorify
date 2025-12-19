@@ -1,4 +1,8 @@
 # services/image_service.py
+from datetime import datetime
+from uuid import UUID, uuid4
+from app.core.dependencies import OrderServiceDep
+from app.core.s3_api import generate_download_url
 from app.schemas.order import OrderCreate
 from sqlalchemy.orm import Session
 from app.models.order_image import OrderImage
@@ -22,17 +26,36 @@ def upload_order_image(db: Session, order_id, file,order:OrderCreate):
 
     return db_image
 
-def save_order_image_record(db:Session, order_id,s3_object_path,uploaded_by):
-    db_image = OrderImage(
-        order_id=order_id,
-        s3_url=s3_object_path,
-        image_type="before",
-        uploaded_by=uploaded_by
-        
-    )
-    db.add(db_image)
-    db.commit()
-    db.refresh(db_image)
+async def save_order_image_record(service:OrderServiceDep, 
+    order_id: str, 
+    s3_object_path: str,
+    uploaded_by: str,
+    image_type: str = "before")->OrderImage:
 
+
+    download_url_response = await generate_download_url(s3_object_path)
+    s3_url = download_url_response.download_link
+    
+    
+    # db_image = OrderImage(
+    #     order_id=order_id,
+    #     s3_url=s3_object_path,
+    #     image_type="before",
+    #     uploaded_by=uploaded_by
+        
+    # )
+
+    # Create new image record
+    db_image = OrderImage(
+        id=uuid4(),
+        order_id=UUID(order_id),
+        uploaded_by=UUID(uploaded_by),
+        s3_url=s3_url,  # Store the download URL
+        s3_object_path=s3_object_path,
+        image_type=image_type,
+        uploaded_at=datetime.utcnow(),
+    )
+
+    result = await service.updateOrderImage(db_image)
 
     return db_image
