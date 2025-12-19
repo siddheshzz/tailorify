@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 # from app.services.seller import SellerService
 # from app.services.shipment import ShipmentService
+from app.services.booking_service import BookingService
+from app.services.order_service import OrderService
 from app.services.service import ServiceService
 from app.services.user_service import UserService
 
@@ -46,7 +48,12 @@ def get_user_service(session: SessionDep):
 def get_service(session:SessionDep):
     return ServiceService(session)
 
+def get_order_service(session:SessionDep):
+    return OrderService(session)
 
+
+def get_booking_service(session:SessionDep):
+    return BookingService(session)
 
 # Shipment service dep annotation
 UserServiceDep = Annotated[
@@ -55,3 +62,14 @@ UserServiceDep = Annotated[
 ]
 
 ServiceServiceDep = Annotated[ServiceService,Depends(get_service),]
+
+
+OrderServiceDep = Annotated[
+    OrderService,
+    Depends(get_order_service)
+]
+
+BookingServiceDep = Annotated[
+    BookingService,
+    Depends(get_booking_service)
+]

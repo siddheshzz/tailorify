@@ -22,3 +22,7 @@ class ServiceResponse(ServiceBase):
     model_config = {
         "from_attributes": True  # replaces orm_mode=True in pydantic v2
     }
+
+
+class ServiceUpdate(ServiceBase):
+    pass

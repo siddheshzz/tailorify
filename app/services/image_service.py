@@ -1,6 +1,7 @@
 # services/image_service.py
 from datetime import datetime
 from uuid import UUID, uuid4
+from app.core.dependencies import OrderServiceDep
 from app.core.s3_api import generate_download_url
 from app.schemas.order import OrderCreate
 from sqlalchemy.orm import Session
@@ -25,7 +26,7 @@ def upload_order_image(db: Session, order_id, file,order:OrderCreate):
 
     return db_image
 
-async def save_order_image_record(db: Session, 
+async def save_order_image_record(service:OrderServiceDep, 
     order_id: str, 
     s3_object_path: str,
     uploaded_by: str,
@@ -54,10 +55,7 @@ async def save_order_image_record(db: Session,
         image_type=image_type,
         uploaded_at=datetime.utcnow(),
     )
-    
-    db.add(db_image)
-    db.commit()
-    db.refresh(db_image)
 
+    result = await service.updateOrderImage(db_image)
 
     return db_image

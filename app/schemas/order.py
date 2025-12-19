@@ -29,6 +29,5 @@ class OrderResponse(OrderBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {
-        "from_attributes": True  # replaces orm_mode=True in pydantic v2
-    }
+    class Config:
+        from_attributes = True

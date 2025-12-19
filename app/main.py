@@ -6,18 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import app.models
 from app.db.session import create_db_tables, engine
 
-# Create DB tables
-# Base.metadata.create_all(bind=engine)
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Startup
-#     create_db_tables()
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-#     yield
-#     # Shutdown (optional cleanup)
-
 @asynccontextmanager
 async def lifespan_handler(app: FastAPI):
     await create_db_tables()
