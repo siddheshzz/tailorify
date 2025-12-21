@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from app.schemas.service import ServiceCreate, ServiceResponse, ServiceUpdate
-from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 from app.schemas.user import UserResponse, UserUpdateAdmin, UserUpdateSelf, UserAuthPayload
-from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 router = APIRouter()

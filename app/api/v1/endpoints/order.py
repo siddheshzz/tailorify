@@ -10,8 +10,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Annotated, List, Optional
 from app.schemas.order import OrderCreate, OrderResponse
-# from app.services.order_service import create_order_service, get_order_by_id_me, get_orders, get_order_by_id, get_orders_me, update_order_service,delete_order_service
-from app.db.session import get_db
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.services.image_service import upload_order_image
@@ -175,7 +173,6 @@ async def confirm_image_upload(
     order_id: UUID,
     service: OrderServiceDep,
     payload: ImageUploadConfirmation,
-    db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     # Verify order exists and belongs to user

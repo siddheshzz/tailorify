@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from urllib3 import ProxyManager
 
 from app.core.exceptions import S3ObjectDoesntExistException
-from app.core.config import app_config
+from app.core.config import settings
 
 
 class S3ServiceSettings(BaseModel):
@@ -17,17 +17,17 @@ class S3ServiceSettings(BaseModel):
     S3 client settings
     """
 
-    S3_BUCKET_NAME: str = app_config.S3_BUCKET_NAME
+    S3_BUCKET_NAME: str = settings.S3_BUCKET_NAME
     # External S3 endpoint
-    S3_ENDPOINT: str = app_config.S3_EXTERNAL_HOST
-    S3_ACCESS_KEY: str = app_config.S3_ACCESS_KEY
-    S3_SECRET_KEY: str = app_config.S3_SECRET_KEY
-    S3_REGION: str = app_config.S3_REGION
-    S3_REQUIRE_TLS: bool = app_config.S3_REQUIRE_TLS
+    S3_ENDPOINT: str = settings.S3_EXTERNAL_HOST
+    S3_ACCESS_KEY: str = settings.S3_ACCESS_KEY
+    S3_SECRET_KEY: str = settings.S3_SECRET_KEY
+    S3_REGION: str = settings.S3_REGION
+    S3_REQUIRE_TLS: bool = settings.S3_REQUIRE_TLS
     # Proxy is required in local environment with docker compose
-    IS_PROXY_REQUIRED: bool = app_config.IS_PROXY_REQUIRED
+    IS_PROXY_REQUIRED: bool = settings.IS_PROXY_REQUIRED
     # Internal docker URL. To set if IS_PROXY_REQUIRED=True
-    S3_INTERNAL_URL: str = app_config.S3_INTERNAL_URL
+    S3_INTERNAL_URL: str = settings.S3_INTERNAL_URL
 
 
 class S3Service:
