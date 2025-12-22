@@ -12,7 +12,6 @@ from typing import Annotated, List, Optional
 from app.schemas.order import OrderCreate, OrderResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.services.image_service import upload_order_image
 from app.schemas.order_image import OrderImageResponse,ImageUploadConfirmation
 from app.services.s3_service import S3Service
 

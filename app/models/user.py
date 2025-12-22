@@ -30,4 +30,4 @@ class User(Base):
     bookings = relationship("Booking", back_populates="users")
 
     def __repr__(self):
-        return f"<User(email='{self.email}',hashed_password='{self.hashed_password}')> "
+        return f"<User(email='{self.email}')> "

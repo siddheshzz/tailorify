@@ -1,12 +1,13 @@
+from typing import Optional
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.models.user import User
 
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_password_hash, verify_password, create_access_token
 from datetime import datetime
-from app.schemas.user import UserUpdateAdmin, UserUpdateSelf
+from app.schemas.user import  UserUpdateAdmin, UserUpdateSelf
 
 
 class UserService:
@@ -14,8 +15,8 @@ class UserService:
     def __init__(self, session: AsyncSession):
         self.session = session
     
-    async def get(self, id:UUID):
-        user = await self.session.get(User, id)
+    async def get(self, user_id:UUID) -> Optional[User]:
+        user = await self.session.get(User, user_id)
         
         return user
     
@@ -23,69 +24,84 @@ class UserService:
         users = await self.session.execute(select(User))
         return users.scalars().all()
     
-    async def add(self,user_data) -> User:
-        time = datetime.now()
-        user = User(
-            email=user_data.email,
-            hashed_password=get_password_hash(user_data.password),
-            first_name = user_data.first_name,
-            last_name = user_data.last_name,
-            user_type = 'client',
-            is_active = True,
-            created_at = time,
-            updated_at = time,
-        
-        )
-        self.session.add(user)
-        await self.session.commit()
-        await self.session.refresh(user)
-
-        return user
-    async def authenticate_user(self, email,password):
-        # stmt = select(User).where(User.email == email)
+    async def get_by_email(self, email: str) -> Optional[User]:
         result = await self.session.execute(select(User).where(User.email == email))
-        user = result.scalar()
-        if user is None or not verify_password(password,user.hashed_password):
-            return None
-        return user
+        return result.scalars().first()
     
+    async def add(self,user_data) -> User:
+        """Create a new user with a hashed password."""
+        time = datetime.now()
+        hashed_pw = get_password_hash(user_data.password)
 
-    async def update_user_self_service(self,id:UUID,payload: UserUpdateSelf):
-        user = await self.get(id)
-        print("xxxxxxxxx")
-        print("xxxxxxxxx")
-        print("xxxxxxxxx")
-        print(user)
+        # 2. Convert Pydantic model to SQLAlchemy model
+        # Exclude 'password' from the dict and add 'hashed_password'
+        user_data = user_data.model_dump(exclude={"password"})
+        db_user = User(**user_data, hashed_password=hashed_pw)
 
-
-        print("xxxxxxxxx")
-        print("xxxxxxxxx")
-        print("xxxxxxxxx")
-
-
+        # user = User(
+        #     email=user_data.email,
+        #     hashed_password=get_password_hash(user_data.password),
+        #     first_name = user_data.first_name,
+        #     last_name = user_data.last_name,
+        #     user_type = 'client',
+        #     is_active = True,
+        #     created_at = time,
+        #     updated_at = time,
+        
+        # )
+        self.session.add(db_user)
+        await self.session.commit()
+        await self.session.refresh(db_user)
+        return db_user
+    
+    async def authenticate_user(self, email:str,password:str) -> Optional[User]:
+        user = await self.get_by_email(email)
         if not user:
             return None
-        for field, value in payload.model_dump().items():
-            setattr(user, field, value)
-
-        await self.session.commit()
-        await self.session.refresh(user)
-        return user
-    
-    async def update_user_admin_service(self,id:UUID, payload:UserUpdateAdmin):
-        user = await self.get(id)
-
-        if not user:
+        if not verify_password(password,user.hashed_password):
             return None
-        
-        for field, value in payload.model_dump().items():
-            setattr(user, field, value)
-        
-        await self.session.commit()
-        await self.session.refresh(user)
         return user
     
-    async def delete_user_service(self,id:UUID):
+
+    async def update_user_self_service(self,user_id:UUID,payload: UserUpdateSelf) -> Optional[User]:
+        """Allow users to update their own basic info or password."""
+        update_data = payload.model_dump(exclude_unset=True)
+
+        if "password" in update_data:
+            update_data['hashshed_password'] =get_password_hash(update_data.pop("password")) 
+        # user = await self.get(user_id)
+
+
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .values(**update_data)
+            .returning(User)
+        )
+        
+        result = await self.session.execute(query)
+        await self.session.commit()
+        return result.scalars().first()
+    
+    async def update_user_admin_service(self,user_id:UUID, payload:UserUpdateAdmin):
+        update_data = payload.model_dump(exclude_unset=True)
+
+        if "password" in update_data:
+            update_data['hashshed_password'] =get_password_hash(update_data.pop("password"))
+
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .values(**update_data)
+            .returning(User)
+        )
+        
+        result = await self.session.execute(query)
+        await self.session.commit()
+        return result.scalars().first()
+        
+    
+    async def delete_user_service(self,id:UUID) -> bool:
         user = self.get(id)
 
         await self.session.delete(user)

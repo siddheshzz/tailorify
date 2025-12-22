@@ -33,7 +33,7 @@ app.add_middleware(
 )
 
 # Mount API
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(service.router, prefix="/api/v1/service", tags=["Service"])
 app.include_router(order.router, prefix="/api/v1/order", tags=["Order"])
