@@ -13,6 +13,7 @@ from app.schemas.order import OrderCreate, OrderResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.schemas.order_image import OrderImageResponse,ImageUploadConfirmation
+from app.schemas.user import UserAuthPayload
 from app.services.s3_service import S3Service
 
 
@@ -22,8 +23,8 @@ allow_admin = RoleChecker(["admin"])
 router = APIRouter()
 security = HTTPBearer()
 
-@router.post("/", response_model=OrderResponse,dependencies=[Depends(JWTBearer())])
-async def create_order(order: OrderCreate, service: OrderServiceDep):
+@router.post("/", response_model=OrderResponse)
+async def create_order(order: OrderCreate, service: OrderServiceDep, current_user: UserAuthPayload = Depends(get_current_user)):
     try:
         return await service.add(order)
     except DuplicateResourceError as e:
@@ -38,15 +39,15 @@ async def create_order(order: OrderCreate, service: OrderServiceDep):
         )
 
 
-@router.get("/", response_model=List[OrderResponse],dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
-async def list_order(service :OrderServiceDep):
+@router.get("/", response_model=List[OrderResponse],dependencies=[Depends(allow_admin)])
+async def list_order(service :OrderServiceDep,current_user: UserAuthPayload = Depends(get_current_user)):
     return await service.get()
 
-@router.get("/me", response_model=List[OrderResponse],dependencies=[Depends(JWTBearer())])
+@router.get("/me", response_model=List[OrderResponse])
 async def list_order_me(service:OrderServiceDep,current_user = Depends(get_current_user)):
     return await service.getMe(UUID(current_user.id))
 
-@router.get("/me/{order_id}", response_model=OrderResponse | None,dependencies=[Depends(JWTBearer())])
+@router.get("/me/{order_id}", response_model=OrderResponse | None)
 async def get_order_me(order_id: UUID,service :OrderServiceDep,current_user = Depends(get_current_user)):
     order = await service.getMeId(UUID(current_user.id), order_id)
 
@@ -59,8 +60,8 @@ async def get_order_me(order_id: UUID,service :OrderServiceDep,current_user = De
         
     return order
 
-@router.get("/{order_id}", response_model=OrderResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
-async def get_order(order_id, service: OrderServiceDep):
+@router.get("/{order_id}", response_model=OrderResponse,dependencies=[Depends(allow_admin)])
+async def get_order(order_id, service: OrderServiceDep,current_user: UserAuthPayload = Depends(get_current_user)):
     order = await service.getId(UUID(order_id))
 
     if order is None:
@@ -71,8 +72,8 @@ async def get_order(order_id, service: OrderServiceDep):
         )
     return order
 
-@router.put("/{order_id}", response_model=OrderResponse,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
-async def update_order(order_id:UUID,payload : OrderCreate,service:OrderServiceDep):
+@router.put("/{order_id}", response_model=OrderResponse,dependencies=[Depends(allow_admin)])
+async def update_order(order_id:UUID,payload : OrderCreate,service:OrderServiceDep, current_user: UserAuthPayload = Depends(get_current_user)):
     # updated = update_order_service(db,order_id,payload)
 
     # if not updated:
@@ -112,8 +113,8 @@ async def update_order(order_id:UUID,payload : OrderCreate,service:OrderServiceD
 #     return saved_image
 
 
-@router.delete("/{order_id}", status_code=204,dependencies=[Depends(JWTBearer()),Depends(allow_admin)])
-async def delete_order(order_id:UUID,service:OrderServiceDep):
+@router.delete("/{order_id}", status_code=204,dependencies=[Depends(allow_admin)])
+async def delete_order(order_id:UUID,service:OrderServiceDep,current_user: UserAuthPayload = Depends(get_current_user)):
     try:
         deleted = await service.remove(order_id) 
 
@@ -179,12 +180,12 @@ async def confirm_image_upload(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # if order.client_id != UUID(current_user.id):
-    #     raise HTTPException(status_code=403, detail="Not your order")
+    if order.client_id != UUID(current_user.id):
+        raise HTTPException(status_code=403, detail="Not your order")
     
     # Save the image record to database
     # You'll need to create this service function
-    from app.services.image_service import save_order_image_record
+    # from app.services.order_service import save_order_image_record
     
     # saved_image = save_order_image_record(
     #     db=db,
@@ -193,10 +194,10 @@ async def confirm_image_upload(
     #     uploaded_by=payload.uploaded_by
     # )
 
-    saved_image = await save_order_image_record(
-        service,
+    saved_image = await service.save_order_image_record(
         order_id=str(order_id),
         s3_object_path=payload.s3_object_path,
+        s3_url=payload.s3_url,
         uploaded_by=str(payload.uploaded_by),
         image_type=payload.image_type 
     )
@@ -220,18 +221,27 @@ async def get_order_images(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
+    if current_user.user_type != "admin" and order.client_id != UUID(current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied to this order.")
+    
     # Get all images for this order
     images = await service.getImages(UUID(order_id))
 
+    # Standard: Use a single S3 service instance rather than creating everytime
+    from app.services.s3_service import S3Service
+    s3 = S3Service()
 
 
-    # Refresh download URLs (they expire after 6 hours)
-    image: OrderImage
+    # for image in images:
+    #     path = getattr(image, "s3_object_path")
+    #     fresh_url_response = await generate_download_url(path)
+    #     setattr(image, "s3_url", fresh_url_response.download_link)
+    #     # path_str = str(image.s3_object_path)
+
     for image in images:
-        path = getattr(image, "s3_object_path")
-        fresh_url_response = await generate_download_url(path)
-        setattr(image, "s3_url", fresh_url_response.download_link)
-        # path_str = str(image.s3_object_path)
+        image.s3_url = s3.generate_download_url(image.s3_object_path)
+    
+    return images
 
 
     

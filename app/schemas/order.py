@@ -6,7 +6,7 @@ from uuid import UUID
 
 class OrderBase(BaseModel):
     description: Optional[str] = None
-    quoted_price: Optional[Decimal] = None
+    quoted_price: Decimal
     actual_price: Optional[Decimal] = None
     notes: Optional[str] = None
     priority: Optional[str] = None

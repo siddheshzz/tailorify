@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse, urlunparse
 import uuid
 from datetime import datetime
 from datetime import timedelta
@@ -19,15 +20,21 @@ class S3ServiceSettings(BaseModel):
 
     S3_BUCKET_NAME: str = settings.S3_BUCKET_NAME
     # External S3 endpoint
-    S3_ENDPOINT: str = settings.S3_EXTERNAL_HOST
+    # S3_ENDPOINT: str = "minio:9000"
     S3_ACCESS_KEY: str = settings.S3_ACCESS_KEY
+    S3_EXTERNAL_HOST:str = settings.S3_EXTERNAL_HOST
     S3_SECRET_KEY: str = settings.S3_SECRET_KEY
     S3_REGION: str = settings.S3_REGION
-    S3_REQUIRE_TLS: bool = settings.S3_REQUIRE_TLS
+    # S3_REQUIRE_TLS: bool = settings.S3_REQUIRE_TLS
     # Proxy is required in local environment with docker compose
-    IS_PROXY_REQUIRED: bool = settings.IS_PROXY_REQUIRED
+    # IS_PROXY_REQUIRED: bool = settings.IS_PROXY_REQUIRED
     # Internal docker URL. To set if IS_PROXY_REQUIRED=True
     S3_INTERNAL_URL: str = settings.S3_INTERNAL_URL
+
+    # Correctly parse string booleans from .env
+    S3_REQUIRE_TLS: bool = str(settings.S3_REQUIRE_TLS).lower() == "true"
+    IS_PROXY_REQUIRED: bool = str(settings.IS_PROXY_REQUIRED).lower() == "true"
+
 
 
 class S3Service:
@@ -44,14 +51,14 @@ class S3Service:
             storage_configuration = S3ServiceSettings()
         self.storage_configuration = storage_configuration
         self.minio_client = Minio(
-            self.storage_configuration.S3_ENDPOINT,
+            endpoint=self.storage_configuration.S3_INTERNAL_URL.replace("http://","").replace("https://",""),
             access_key=self.storage_configuration.S3_ACCESS_KEY,
             secret_key=self.storage_configuration.S3_SECRET_KEY,
             region=self.storage_configuration.S3_REGION,
             secure=self.storage_configuration.S3_REQUIRE_TLS,
-            http_client=ProxyManager(self.storage_configuration.S3_INTERNAL_URL)
-            if self.storage_configuration.IS_PROXY_REQUIRED
-            else None,
+            # http_client=ProxyManager(self.storage_configuration.S3_INTERNAL_URL)
+            # if self.storage_configuration.IS_PROXY_REQUIRED
+            # else None,
         )
         self.tmp_path: str = "./tmp"
 
@@ -200,7 +207,7 @@ class S3Service:
 
     def generate_presigned_upload_url(
         self, s3_object_path: str | None = None, expiration_minutes: int = 360, file_extension: str = ""
-    ) -> tuple[str, str]:
+    ):
         """
         Generate a pre-signed URL for uploading files directly from the frontend.
 
@@ -222,11 +229,14 @@ class S3Service:
                 s3_object_path = self.__generate_upload_path_with_file_name()
     
         try:
-            presigned_url = self.minio_client.presigned_put_object(
+            url = self.minio_client.presigned_put_object(
                 bucket_name=self.storage_configuration.S3_BUCKET_NAME,
                 object_name=s3_object_path,
                 expires=timedelta(minutes=expiration_minutes),
             )
-            return presigned_url, s3_object_path
+            if self.storage_configuration.S3_EXTERNAL_HOST:
+                parsed = urlparse(url)
+                url = urlunparse(parsed._replace(netloc=self.storage_configuration.S3_EXTERNAL_HOST))
+            return url, s3_object_path
         except Exception as e:
             raise RuntimeError(f"Failed to generate pre-signed URL: {str(e)}") from e

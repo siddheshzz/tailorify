@@ -1,5 +1,6 @@
+from datetime import datetime, timezone
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DatabaseCommunicationError, OrderNotFoundError
@@ -121,9 +122,41 @@ class OrderService:
 
         # return images
 
+        
+    async def save_order_image_record(
+        self, 
+        order_id: str, 
+        s3_object_path: str,
+        s3_url:str,
+        uploaded_by: str,
+        image_type: str = "before")->OrderImage:
 
+        # download_url_response = await generate_download_url(s3_object_path)
+        # s3_url = download_url_response.download_link
+        
+        
+        # db_image = OrderImage(
+        #     order_id=order_id,
+        #     s3_url=s3_object_path,
+        #     image_type="before",
+        #     uploaded_by=uploaded_by
+            
+        # )
 
-    
+        # Create new image record
+        db_image = OrderImage(
+            id=uuid4(),
+            order_id=UUID(order_id),
+            uploaded_by=UUID(uploaded_by),
+            s3_url=s3_url,  # Store the download URL
+            s3_object_path=s3_object_path,
+            image_type=image_type,
+            uploaded_at=datetime.now(timezone.utc),
+        )
+        self.session.add(db_image)
+        await self.session.commit()
+        await self.session.refresh(db_image)
+        return db_image
 
 
 

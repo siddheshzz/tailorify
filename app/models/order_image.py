@@ -1,7 +1,7 @@
 from app.models.base import Base, default_uuid, default_timestamp
 from sqlalchemy import Column, String, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 class OrderImage(Base):
     __tablename__ = "order_images"
@@ -13,8 +13,8 @@ class OrderImage(Base):
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     
     # Details
-    s3_url = Column(String, nullable=False)
-    s3_object_path = Column(String, nullable=False)
+    s3_url: Mapped[str] = mapped_column(String)
+    s3_object_path: Mapped[str] = mapped_column(String)
     image_type = Column(
         Enum('before', 'after', 'reference', 'instruction', name='image_type_enum'),
         nullable=False

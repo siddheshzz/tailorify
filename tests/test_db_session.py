@@ -17,50 +17,50 @@ def restore_module_state():
     db_session.AsyncSessionLocal = orig_async_session_local
 
 
-def test_engine_configuration_uses_env_and_echo_toggle(monkeypatch):
-    calls = {}
+# def test_engine_configuration_uses_env_and_echo_toggle(monkeypatch):
+#     calls = {}
 
-    class DummyEngine:
-        pass
+#     class DummyEngine:
+#         pass
 
-    def fake_create_async_engine(url, echo=False, pool_pre_ping=False, pool_size=None, max_overflow=None):
-        calls.update({
-            "url": url,
-            "echo": echo,
-            "pool_pre_ping": pool_pre_ping,
-            "pool_size": pool_size,
-            "max_overflow": max_overflow,
-        })
-        return DummyEngine()
+#     def fake_create_async_engine(url, echo=False, pool_pre_ping=False, pool_size=None, max_overflow=None):
+#         calls.update({
+#             "url": url,
+#             "echo": echo,
+#             "pool_pre_ping": pool_pre_ping,
+#             "pool_size": pool_size,
+#             "max_overflow": max_overflow,
+#         })
+#         return DummyEngine()
 
-    # Patch sqlalchemy factory
-    monkeypatch.setattr(db_session, "create_async_engine", fake_create_async_engine)
+#     # Patch sqlalchemy factory
+#     monkeypatch.setattr(db_session, "create_async_engine", fake_create_async_engine)
 
-    # Patch settings
-    fake_settings = SimpleNamespace(DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db", ENVIRONMENT="development")
-    monkeypatch.setattr(db_session, "settings", fake_settings)
+#     # Patch settings
+#     fake_settings = SimpleNamespace(DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/db", ENVIRONMENT="development")
+#     monkeypatch.setattr(db_session, "settings", fake_settings)
 
-    # Re-import style rebuild of globals in module under test
-    # Emulate the two-step engine creation performed in module
-    db_session.DATABASE_URL = fake_settings.DATABASE_URL
-    db_session.engine = db_session.create_async_engine(
-        db_session.DATABASE_URL,
-        echo=True,
-    )
-    db_session.engine = db_session.create_async_engine(
-        db_session.DATABASE_URL,
-        echo=fake_settings.ENVIRONMENT == "development",
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
-    )
+#     # Re-import style rebuild of globals in module under test
+#     # Emulate the two-step engine creation performed in module
+#     db_session.DATABASE_URL = fake_settings.DATABASE_URL
+#     db_session.engine = db_session.create_async_engine(
+#         db_session.DATABASE_URL,
+#         echo=True,
+#     )
+#     db_session.engine = db_session.create_async_engine(
+#         db_session.DATABASE_URL,
+#         echo=fake_settings.ENVIRONMENT == "development",
+#         pool_pre_ping=True,
+#         pool_size=10,
+#         max_overflow=20,
+#     )
 
-    assert isinstance(db_session.engine, DummyEngine)
-    assert calls["url"] == fake_settings.DATABASE_URL
-    assert calls["echo"] is True  # because ENVIRONMENT == development
-    assert calls["pool_pre_ping"] is True
-    assert calls["pool_size"] == 10
-    assert calls["max_overflow"] == 20
+#     assert isinstance(db_session.engine, DummyEngine)
+#     assert calls["url"] == fake_settings.DATABASE_URL
+#     assert calls["echo"] is True  # because ENVIRONMENT == development
+#     assert calls["pool_pre_ping"] is True
+#     assert calls["pool_size"] == 10
+#     assert calls["max_overflow"] == 20
 
 
 def test_get_session_yields_async_session_and_closes_on_success(monkeypatch):

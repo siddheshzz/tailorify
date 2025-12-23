@@ -25,5 +25,6 @@ class OrderImageResponse(OrderImageBase):
 
 class ImageUploadConfirmation(BaseModel):
     s3_object_path: str
+    s3_url:str
     uploaded_by: UUID
     image_type: Literal['before', 'after', 'reference', 'instruction']

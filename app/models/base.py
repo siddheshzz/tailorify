@@ -3,10 +3,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, Enum, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, DeclarativeBase
 
 # The Declarative Base: All models must inherit from this
-Base = declarative_base()
+class Base(DeclarativeBase):
+    """The shared Base class for all models"""
+    pass
 
 # Utility functions for common columns (optional, but good practice)
 def default_uuid():

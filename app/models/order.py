@@ -1,7 +1,7 @@
 from app.models.base import Base, default_uuid, default_timestamp
 from sqlalchemy import Column, String, Enum, ForeignKey, Numeric,DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship,Mapped, mapped_column
 
 
 class Order(Base):
@@ -10,7 +10,13 @@ class Order(Base):
     id = default_uuid()
     
     # # Foreign Keys
-    client_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    client_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
     service_id = Column(UUID(as_uuid=True), ForeignKey("services.id"), nullable=False, index=True)
     
     # Details
