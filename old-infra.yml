@@ -1,0 +1,107 @@
+version: "3.9"
+
+# Define shared environment variables for consistency
+x-linux-container-environment:
+  &common-linux-container-environment-variables
+  TZ: "Asia/India"
+
+
+services:
+
+  db_test:
+    image: postgres:15-alpine
+    container_name: postgres_test
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432" # Different port than usual
+
+  web:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code          # Syncs your code into the container
+      - db_data:/code/app/db_data 
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    env_file:
+      - .env
+    environment:
+      <<: *common-linux-container-environment-variables
+      
+      # Database access details (if needed)
+      
+      # S3/MinIO Configuration for the Backend
+      S3_INTERNAL_URL: ${S3_INTERNAL_URL}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION}
+      S3_REQUIRE_TLS: ${S3_REQUIRE_TLS}
+      S3_EXTERNAL_HOST: "localhost:9000"
+      
+      # Crucial setting for internal container communication:
+      # Use the MinIO service name as the internal URL
+      # S3_INTERNAL_URL: http://minio:${S3_INTERNAL_PORT}
+      IS_PROXY_REQUIRED: "True" # Set this to "True" since we're using S3_INTERNAL_URL
+      
+      # Host the client sees for pre-signed URLs (must be the external IP/DNS)
+      # S3_EXTERNAL_HOST: ${S3_EXTERNAL_HOST} 
+      
+      # Internal port for the MinIO service
+      S3_INTERNAL_PORT: ${S3_INTERNAL_PORT} 
+      BACKEND_INTERNAL_PORT: ${BACKEND_INTERNAL_PORT}
+    depends_on:
+      - minio
+
+    restart: unless-stopped
+
+  # S3 compatible storage (MinIO)
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio_storage
+    ports:
+      # Internal port (used by backend) to External port (if needed)
+      - ${S3_EXTERNAL_PORT}:${S3_INTERNAL_PORT} 
+      # Console port
+      - ${MINIO_CONSOLE_EXTERNAL_PORT}:${MINIO_CONSOLE_INTERNAL_PORT} 
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      MINIO_SERVER_URL: "http://localhost:9000"
+
+      MINIO_BROWSER_REDIRECT_URL: "http://localhost:9001"
+    volumes:
+      - minio-data:/data
+      - ./minio/init:/docker-entrypoint-init.d
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: minio_init
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "/minio-init/create-bucket.sh"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+    volumes:
+      - ./minio/init:/minio-init
+
+volumes:
+  minio-data:
+  minio-config:
+  db_data:
+
+    
+
+
+
+
+
