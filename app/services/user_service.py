@@ -1,34 +1,34 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from sqlalchemy import select, update
-from app.models.user import User
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.security import get_password_hash, verify_password, create_access_token
-from datetime import datetime
-from app.schemas.user import  UserUpdateAdmin, UserUpdateSelf
+from sqlalchemy.orm import Session
+
+from app.core.security import get_password_hash, verify_password
+from app.models.user import User
+from app.schemas.user import UserUpdateAdmin, UserUpdateSelf
 
 
 class UserService:
-
     def __init__(self, session: AsyncSession):
         self.session = session
-    
-    async def get(self, user_id:UUID) -> Optional[User]:
+
+    async def get(self, user_id: UUID) -> Optional[User]:
         user = await self.session.get(User, user_id)
-        
+
         return user
-    
+
     async def getAll(self):
         users = await self.session.execute(select(User))
         return users.scalars().all()
-    
+
     async def get_by_email(self, email: str) -> Optional[User]:
         result = await self.session.execute(select(User).where(User.email == email))
         return result.scalars().first()
-    
-    async def add(self,user_data) -> User:
+
+    async def add(self, user_data) -> User:
         """Create a new user with a hashed password."""
         time = datetime.now()
         hashed_pw = get_password_hash(user_data.password)
@@ -47,72 +47,67 @@ class UserService:
         #     is_active = True,
         #     created_at = time,
         #     updated_at = time,
-        
+
         # )
         self.session.add(db_user)
         await self.session.commit()
         await self.session.refresh(db_user)
         return db_user
-    
-    async def authenticate_user(self, email:str,password:str) -> Optional[User]:
+
+    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         user = await self.get_by_email(email)
         if not user:
             return None
-        if not verify_password(password,user.hashed_password):
+        if not verify_password(password, user.hashed_password):
             return None
         return user
-    
 
-    async def update_user_self_service(self,user_id:UUID,payload: UserUpdateSelf) -> Optional[User]:
+    async def update_user_self_service(
+        self, user_id: UUID, payload: UserUpdateSelf
+    ) -> Optional[User]:
         """Allow users to update their own basic info or password."""
         update_data = payload.model_dump(exclude_unset=True)
 
         if "password" in update_data:
-            update_data['hashshed_password'] =get_password_hash(update_data.pop("password")) 
+            update_data["hashshed_password"] = get_password_hash(
+                update_data.pop("password")
+            )
         # user = await self.get(user_id)
 
-
         query = (
-            update(User)
-            .where(User.id == user_id)
-            .values(**update_data)
-            .returning(User)
+            update(User).where(User.id == user_id).values(**update_data).returning(User)
         )
-        
+
         result = await self.session.execute(query)
         await self.session.commit()
         return result.scalars().first()
-    
-    async def update_user_admin_service(self,user_id:UUID, payload:UserUpdateAdmin):
+
+    async def update_user_admin_service(self, user_id: UUID, payload: UserUpdateAdmin):
         update_data = payload.model_dump(exclude_unset=True)
 
         if "password" in update_data:
-            update_data['hashshed_password'] =get_password_hash(update_data.pop("password"))
+            update_data["hashshed_password"] = get_password_hash(
+                update_data.pop("password")
+            )
 
         query = (
-            update(User)
-            .where(User.id == user_id)
-            .values(**update_data)
-            .returning(User)
+            update(User).where(User.id == user_id).values(**update_data).returning(User)
         )
-        
+
         result = await self.session.execute(query)
         await self.session.commit()
         return result.scalars().first()
-        
-    
-    async def delete_user_service(self,id:UUID) -> bool:
+
+    async def delete_user_service(self, id: UUID) -> bool:
         user = self.get(id)
 
         await self.session.delete(user)
         await self.session.commit()
         return True
 
-    
-
 
 # async def create_user(user_data,db:Session):
-    
+
 #     time = datetime.now()
 #     user = User(
 #         email=user_data.email,
@@ -123,7 +118,7 @@ class UserService:
 #         is_active = True,
 #         created_at = time,
 #         updated_at = time,
-       
+
 #     )
 #     db.add(user)
 #     db.commit()
@@ -141,10 +136,11 @@ class UserService:
 #     return user
 
 
-def get_user_service(db:Session, id):
-
+def get_user_service(db: Session, id):
     user = db.query(User).filter(User.id == id).first()
     return user
+
+
 # def get_all_user_service(db:Session):
 #     users = db.query(User).all()
 #     return users
@@ -189,4 +185,3 @@ def get_user_service(db:Session, id):
 #     db.commit()
 
 #     return True
-

@@ -1,20 +1,19 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import pytest
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.security import (
-    get_password_hash,
-    verify_password,
+    JWTBearer,
+    RoleChecker,
     create_access_token,
     decode_access_token,
-    JWTBearer,
     get_current_user,
-    RoleChecker,
+    get_password_hash,
+    verify_password,
 )
-
 
 app = FastAPI()
 
@@ -46,6 +45,7 @@ def valid_user_payload():
 
 # 1. Password hashing behaviors
 
+
 def test_password_hash_and_verify_roundtrip():
     pwd = "S3cureP@ss!"
     hashed = get_password_hash(pwd)
@@ -55,6 +55,7 @@ def test_password_hash_and_verify_roundtrip():
 
 
 # 2. Token creation and decoding behaviors
+
 
 def test_create_and_decode_access_token_contains_exp(valid_user_payload):
     token = create_access_token(valid_user_payload)
@@ -70,6 +71,7 @@ def test_decode_access_token_returns_none_on_invalid():
 
 
 # 3. JWTBearer behaviors
+
 
 def test_jwtbearer_rejects_missing_header():
     res = client.get("/protected")
@@ -87,6 +89,7 @@ def test_jwtbearer_accepts_valid_token(valid_user_payload):
 
 
 # 4. get_current_user behaviors
+
 
 def test_get_current_user_builds_schema(valid_user_payload):
     token = create_access_token(valid_user_payload)
@@ -119,6 +122,7 @@ def test_get_current_user_403_on_missing_fields():
 
 
 # 5. RoleChecker behaviors
+
 
 def test_rolechecker_allows_admin(valid_user_payload):
     token = create_access_token(valid_user_payload)

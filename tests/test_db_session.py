@@ -1,5 +1,4 @@
 import asyncio
-from types import SimpleNamespace
 
 import pytest
 
@@ -88,6 +87,7 @@ def test_get_session_yields_async_session_and_closes_on_success(monkeypatch):
         # Return a callable that produces our DummyAsyncSession and supports async context manager via __aenter__/__aexit__
         def factory():
             return DummyAsyncSession()
+
         return factory
 
     monkeypatch.setattr(db_session, "AsyncSessionLocal", fake_sessionmaker())
@@ -141,6 +141,7 @@ def test_get_session_rolls_back_and_closes_on_exception(monkeypatch):
     def fake_sessionmaker(**kwargs):
         def factory():
             return DummyAsyncSession()
+
         return factory
 
     monkeypatch.setattr(db_session, "AsyncSessionLocal", fake_sessionmaker())

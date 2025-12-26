@@ -5,11 +5,10 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.core.security import create_access_token
 from app.api.v1.endpoints import booking as booking_endpoint
+from app.core.security import create_access_token
+from app.main import app
 from app.services import booking_service
-
 
 client = TestClient(app)
 
@@ -75,7 +74,9 @@ def test_create_booking_success(monkeypatch, override_dependencies):
     assert uuid.UUID(data["id"]) == created_id
     assert uuid.UUID(data["user_id"])  # is a valid UUID
     assert uuid.UUID(data["service_id"]) == service_id
-    assert data["status"] in ("pending", "confirmed", "cancelled") or isinstance(data["status"], str)
+    assert data["status"] in ("pending", "confirmed", "cancelled") or isinstance(
+        data["status"], str
+    )
     assert "appointment_time" in data
     assert "created_at" in data
 
@@ -104,7 +105,9 @@ def test_list_bookings_success(monkeypatch, override_dependencies):
         assert isinstance(current_user_id, uuid.UUID)
         return [booking1, booking2]
 
-    monkeypatch.setattr(booking_service, "get_bookings_by_user", fake_get_bookings_by_user)
+    monkeypatch.setattr(
+        booking_service, "get_bookings_by_user", fake_get_bookings_by_user
+    )
 
     # Act
     res = client.get("/api/v1/booking/", headers=override_dependencies())

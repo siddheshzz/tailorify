@@ -5,11 +5,11 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.core.security import create_access_token
 from app.api.v1.endpoints import order as order_endpoint
-from app.services import order_service
+from app.core.security import create_access_token
+from app.main import app
 from app.schemas.order import OrderCreate
+from app.services import order_service
 
 client = TestClient(app)
 
@@ -56,7 +56,9 @@ def test_create_order_success(monkeypatch, auth_headers_client):
         )
 
     # Dependency override for OrderServiceDep is wired in app.core.dependencies; we can monkeypatch service layer
-    monkeypatch.setattr(order_service.OrderService, "add", staticmethod(lambda order: fake_add(order)))
+    monkeypatch.setattr(
+        order_service.OrderService, "add", staticmethod(lambda order: fake_add(order))
+    )
 
     payload = {
         "client_id": str(client_id),
@@ -125,7 +127,9 @@ def test_confirm_upload_validates_access(monkeypatch, auth_headers_client):
         return SimpleNamespace(id=uuid.uuid4(), **kwargs)
 
     monkeypatch.setattr(order_service.OrderService, "getId", fake_get_id)
-    monkeypatch.setattr(order_service.OrderService, "save_order_image_record", fake_save_record)
+    monkeypatch.setattr(
+        order_service.OrderService, "save_order_image_record", fake_save_record
+    )
 
     payload = {
         "s3_object_path": "orders/obj.jpg",
@@ -134,7 +138,11 @@ def test_confirm_upload_validates_access(monkeypatch, auth_headers_client):
         "image_type": "before",
     }
 
-    res = client.post(f"/api/v1/order/{order_id}/confirm-upload", json=payload, headers=auth_headers_client)
+    res = client.post(
+        f"/api/v1/order/{order_id}/confirm-upload",
+        json=payload,
+        headers=auth_headers_client,
+    )
     assert res.status_code == 403
 
 
@@ -170,6 +178,7 @@ def test_get_order_images_populates_fresh_urls(monkeypatch, auth_headers_client)
     monkeypatch.setattr(order_service.OrderService, "getImages", fake_get_images)
     # Patch S3Service class used in endpoint scope
     import app.services.s3_service as s3_service_module
+
     monkeypatch.setattr(s3_service_module, "S3Service", FakeS3)
 
     # Act

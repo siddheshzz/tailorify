@@ -1,8 +1,9 @@
-import pytest
 from types import SimpleNamespace
 
-from app.core.s3_api import generate_presigned_upload_url, generate_download_url
+import pytest
+
 from app.core.exceptions import S3ObjectDoesntExistException
+from app.core.s3_api import generate_download_url, generate_presigned_upload_url
 
 
 @pytest.fixture
@@ -12,7 +13,10 @@ def fake_s3_service(monkeypatch):
     """
     # Create a fake service we can configure in each test
     fake = SimpleNamespace(
-        generate_presigned_upload_url=lambda *args, **kwargs: ("http://upload-url", "orders/2024/01/01/abc"),
+        generate_presigned_upload_url=lambda *args, **kwargs: (
+            "http://upload-url",
+            "orders/2024/01/01/abc",
+        ),
         generate_download_url=lambda *args, **kwargs: "http://download-url",
     )
 
@@ -21,7 +25,6 @@ def fake_s3_service(monkeypatch):
         return fake
 
     # Patch the class in the module under test
-    from app import services
     from app.services import s3_service as s3_service_module
 
     monkeypatch.setattr(s3_service_module, "S3Service", fake_ctor)
@@ -40,7 +43,9 @@ async def test_generate_presigned_upload_url_returns_schema(fake_s3_service):
 
 
 @pytest.mark.asyncio
-async def test_generate_presigned_upload_url_ignores_extension_and_content_type(monkeypatch):
+async def test_generate_presigned_upload_url_ignores_extension_and_content_type(
+    monkeypatch,
+):
     # Arrange: ensure that API does not forward these args to service
     calls = {}
 
@@ -51,13 +56,19 @@ async def test_generate_presigned_upload_url_ignores_extension_and_content_type(
 
     # Patch constructor to return fake instance
     from types import SimpleNamespace
-    fake = SimpleNamespace(generate_presigned_upload_url=fake_generate_presigned_upload_url)
+
+    fake = SimpleNamespace(
+        generate_presigned_upload_url=fake_generate_presigned_upload_url
+    )
 
     from app.services import s3_service as s3_service_module
+
     monkeypatch.setattr(s3_service_module, "S3Service", lambda *a, **k: fake)
 
     # Act
-    out = await generate_presigned_upload_url(file_extension=".png", content_type="image/png")
+    out = await generate_presigned_upload_url(
+        file_extension=".png", content_type="image/png"
+    )
 
     # Assert: API returns service result and DID NOT pass through our args
     assert out.url == "http://upload-url-ext"
@@ -85,6 +96,7 @@ async def test_generate_download_url_propagates_not_found(monkeypatch):
     fake = SimpleNamespace(generate_download_url=raise_not_found)
 
     from app.services import s3_service as s3_service_module
+
     monkeypatch.setattr(s3_service_module, "S3Service", lambda *a, **k: fake)
 
     # Act + Assert
@@ -101,6 +113,7 @@ async def test_generate_presigned_upload_url_propagates_runtime_error(monkeypatc
     fake = SimpleNamespace(generate_presigned_upload_url=raise_runtime)
 
     from app.services import s3_service as s3_service_module
+
     monkeypatch.setattr(s3_service_module, "S3Service", lambda *a, **k: fake)
 
     # Act + Assert

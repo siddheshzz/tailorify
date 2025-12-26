@@ -4,6 +4,7 @@ import uuid
 
 MEDIA_ROOT = "media/orders"
 
+
 def save_order_image(order_id, file) -> str:
     os.makedirs(f"{MEDIA_ROOT}/{order_id}", exist_ok=True)
 

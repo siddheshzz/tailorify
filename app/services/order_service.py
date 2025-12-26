@@ -1,19 +1,25 @@
+import logging
+import os
+import shutil
+import tempfile
 from datetime import datetime, timezone
-from typing import List
 from uuid import UUID, uuid4
+
+from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings as app_config
 from app.core.exceptions import DatabaseCommunicationError, OrderNotFoundError
-from app.core.s3_api import generate_download_url
+
+
 from app.models.order import Order
 from app.models.order_image import OrderImage
 from app.schemas.order import OrderCreate
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-import logging
-
+from app.services.storage.factory import get_storage_service
 
 logger = logging.getLogger(__name__)
-
 
 
 class OrderService:
@@ -24,32 +30,39 @@ class OrderService:
     async def get(self):
         services = await self.session.execute(select(Order))
         return services.scalars().all()
-    
-    async def getId(self,id):
+
+    async def getId(self, id):
         result = await self.session.execute(select(Order).filter(Order.id == id))
         service = result.scalar()
         return service
-        
-    async def getMe(self,client_id):
-        service = await self.session.execute(select(Order).filter(Order.client_id == client_id))
+
+    async def getMe(self, client_id):
+        service = await self.session.execute(
+            select(Order).filter(Order.client_id == client_id)
+        )
         return service.scalars().all()
-    
-    async def getMeId(self,client_id,order_id):
+
+    async def getMeId(self, client_id, order_id):
         try:
-            result = await self.session.execute(select(Order).filter(Order.client_id == client_id).filter(Order.id == order_id))
+            result = await self.session.execute(
+                select(Order)
+                .filter(Order.client_id == client_id)
+                .filter(Order.id == order_id)
+            )
             order = result.scalar_one_or_none()
 
             if not order:
                 raise OrderNotFoundError(f"Order {order_id} not found for this client.")
-        
+
             return order
         except SQLAlchemyError as e:
             logger.error(f"Database error while fetching order {order_id}: {str(e)}")
             # Don't leak raw DB errors to the user; wrap them in a custom exception
-            raise DatabaseCommunicationError("An internal error occurred while fetching the record.")
+            raise DatabaseCommunicationError(
+                "An internal error occurred while fetching the record."
+            )
 
-
-    async def add(self,order)-> Order:
+    async def add(self, order) -> Order:
         ser = Order(**order.model_dump())
 
         self.session.add(ser)
@@ -58,21 +71,18 @@ class OrderService:
         await self.session.refresh(ser)
 
         return ser
-    
-    async def addOrderImage(self,orderImage:OrderImage)-> OrderImage:
-        
 
+    async def addOrderImage(self, orderImage: OrderImage) -> OrderImage:
         self.session.add(orderImage)
 
         await self.session.commit()
         await self.session.refresh(orderImage)
 
         return orderImage
-    
 
-    async def remove(self,id):
+    async def remove(self, id):
         result = await self.session.execute(select(Order).filter(Order.id == id))
-        
+
         service = result.scalar_one_or_none()
         if not service:
             return False
@@ -80,69 +90,64 @@ class OrderService:
         await self.session.commit()
 
         return True
-    
-    async def update(self, id,payload:OrderCreate):
+
+    async def update(self, id, payload: OrderCreate):
         res = await self.getId(id)
 
         if res is None:
             return None
-        
+
         data = payload.model_dump(exclude_unset=True)
 
         for field, value in data.items():
-            setattr(res,field,value)
+            setattr(res, field, value)
 
         await self.session.commit()
         await self.session.refresh(res)
 
         return res
-    
-    async def updateOrderImage(self,orderImage):
+
+    async def updateOrderImage(self, orderImage):
         ser = await self.addOrderImage(orderImage)
 
         await self.session.commit()
         await self.session.refresh(ser)
         # db.query(OrderImage).filter(OrderImage.order_id == UUID(order_id)).all()
 
-    async def getImages(self, order_id):
-        # res = await self.session.execute(select(OrderImage).filter(OrderImage.order_id == order_id))
+    async def getImageImageId(self, image_id):
+   
+        try:
+            res = await self.session.execute(
+                select(OrderImage).filter(OrderImage.id == UUID(image_id))
+            )
+        except Exception as e:
+        
+            await self.session.rollback()
+            raise Exception(f"Failed to upload image: {str(e)}")
 
-        # images = res.scalars().all()
+        image = res.scalar_one_or_none()
 
-        # for image in images:
-        #     path = image.s3_object_path
-        #     fresh_url_response = await generate_download_url(path)
-        #     image.s3_url = fresh_url_response.download_link
+        return image
+
+    async def getOrderImages(self, order_id):
 
         res = await self.session.execute(
-        select(OrderImage).filter(OrderImage.order_id == order_id)
+            select(OrderImage).filter(OrderImage.order_id == order_id)
         )
         return list(res.scalars().all())
-        
 
-        # return images
+    async def getOrderImagesAll(self):
+        res = await self.session.execute(select(OrderImage))
+        return list(res.scalars().all())
 
-        
     async def save_order_image_record(
-        self, 
-        order_id: str, 
+        self,
+        order_id: str,
         s3_object_path: str,
-        s3_url:str,
+        s3_url: str,
         uploaded_by: str,
-        image_type: str = "before")->OrderImage:
-
-        # download_url_response = await generate_download_url(s3_object_path)
-        # s3_url = download_url_response.download_link
-        
-        
-        # db_image = OrderImage(
-        #     order_id=order_id,
-        #     s3_url=s3_object_path,
-        #     image_type="before",
-        #     uploaded_by=uploaded_by
-            
-        # )
-
+        image_type: str = "before",
+    ) -> OrderImage:
         # Create new image record
         db_image = OrderImage(
             id=uuid4(),
@@ -158,69 +163,167 @@ class OrderService:
         await self.session.refresh(db_image)
         return db_image
 
+    async def upload_order_image_to_storage(
+        self, order_id: str, file: UploadFile, uploaded_by: str, image_type: str
+    ) -> OrderImage:
+        """
+        Upload image file to storage (MinIO or S3).
+        Works with both local and production environments.
+        """
+
+        storage_service = get_storage_service()
+        temp_file_path = None
+
+        try:
+            # print(f"📸 Starting upload for order {order_id}")
+            # print(f"   File: {file.filename}")
+            # print(f"   Type: {file.content_type}")
+            # print(f"   Image Type: {image_type}")
+            # Validate file type
+            if file.content_type not in app_config.ALLOWED_IMAGE_TYPES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid file type. Allowed: {', '.join(app_config.ALLOWED_IMAGE_TYPES)}",
+                )
+
+            # Create temporary file
+            file_extension = (
+                os.path.splitext(file.filename)[1] if file.filename else ".jpeg"
+            )
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
+            temp_file_path = temp_file.name
+            temp_file.close()
+
+            # print(f"💾 Saving to temp file: {temp_file_path}")
+
+            # Save uploaded file to temp location
+            with open(temp_file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+                buffer.flush()  # Explicitly push data to disk
+                os.fsync(buffer.fileno())  # Ensure it's written
+
+            # Verify file was saved
+            file_size = os.path.getsize(temp_file_path)
+            # print(f"✅ Temp file saved: {file_size} bytes")
+
+            if file_size == 0:
+                raise Exception("Uploaded file is empty")
+
+            # Upload to storage
+            # print("📤 Uploading to storage...")
+
+            # Upload to storage (MinIO or S3)
+            object_name = storage_service.upload_file(temp_file_path)
+            # print(f"✅ Uploaded to storage: {object_name}")
+
+            # Verify upload
+            if not storage_service.file_exists(object_name):
+                raise Exception(f"Upload verification failed for {object_name}")
+
+            # Generate download URL
+            # print("🔗 Generating download URL...")
+
+            # Generate download URL
+            download_url = storage_service.generate_presigned_download_url(
+                object_name, expiry_minutes=app_config.PRESIGNED_URL_EXPIRY_MINUTES
+            )
+            # print("✅ Download URL generated")
+
+            # Save to database
+            db_image = OrderImage(
+                id=uuid4(),
+                order_id=UUID(order_id),
+                uploaded_by=UUID(uploaded_by),
+                s3_object_path=object_name,
+                s3_url=download_url,
+                image_type=image_type,
+            )
+
+            self.session.add(db_image)
+
+            await self.session.commit()
+            await self.session.refresh(db_image)
+
+            return db_image
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            await self.session.rollback()
+            raise Exception(f"Failed to upload image: {str(e)}")
+
+        finally:
+            # Step 6: Clean up temp file
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                    print("🗑️ Cleaned up temp file")
+                except Exception as e:
+                    print(f"Failed to delete temp file: {e}")
+
+    async def delete_order_image(self, image_id: str) -> bool:
+        """Delete image from storage and database"""
+        storage_service = get_storage_service()
+        print("*********")
+        print("in delete order imageservice SERVICE")
+
+        try:
+            # Get image from database
+            image = await self.getImageImageId(image_id)
+            if not image:
+                return False
+            # Delete from storage
+            storage_service.delete_file(image.s3_object_path)
+
+            # Delete from database
+
+            await self.session.delete(image)
+            await self.session.commit()
+
+            return True
+        except Exception as e:
+            print(f"Failed to delete image: {e}")
+            return False
+
+    async def regenerate_download_urls(
+        self, images: list[OrderImage]
+    ) -> list[OrderImage]:
+        """Regenerate fresh download URLs for a list of images"""
+        storage_service = get_storage_service()
+
+        for image in images:
+            try:
+                fresh_url = storage_service.generate_presigned_download_url(
+                    image.s3_object_path,
+                    expiry_minutes=app_config.PRESIGNED_URL_EXPIRY_MINUTES,
+                )
+                image.s3_url = fresh_url
+            except Exception as e:
+                print(f"Failed to regenerate URL for {image.s3_object_path}: {e}")
+
+        return images
+
+    # async def download_file(self, images: list[OrderImage]) -> str:
+    #     """Regenerate fresh download URLs for a list of images"""
+    #     storage_service = get_storage_service()
+
+    #     for image in images:
+    #         try:
+    #             fresh_url = storage_service.generate_presigned_download_url(
+    #                 image.s3_object_path,
+    #                 expiry_minutes=app_config.PRESIGNED_URL_EXPIRY_MINUTES,
+    #             )
+    #             image.s3_url = fresh_url
+    #         except Exception as e:
+    #             print(f"Failed to regenerate URL for {image.s3_object_path}: {e}")
 
 
-# def create_order_service(db: Session, order: OrderCreate):
-#     db_order = Order(**order.dict())
-#     db.add(db_order)
-#     db.commit()
-#     db.refresh(db_order)
-#     return db_order
 
-# def get_orders(db: Session, skip: int = 0, limit: int = 10):
-#     return db.query(Order).offset(skip).limit(limit).all()
+    #     name = images[0].s3_object_path.rsplit("/", 1)[-1]
+    #     path = images[0].s3_object_path
+    #     res = storage_service.download_file(name, path)
+
+    #     return res
 
 
-# def get_orders_me(db: Session,current_id, skip: int = 0, limit: int = 10):
-#     return db.query(Order).filter(Order.client_id == current_id).offset(skip).limit(limit).all()
-
-# def get_order_by_id_me(order_id:UUID , db: Session, current_id):
-#     try:
-#         order = db.query(Order).filter(Order.id == order_id).filter(Order.client_id==UUID(current_id)).first()
-#         return order
-#     except IntegrityError as e:
-#         logger.warning(f"Integrity error when creating service: {e}")
-#         # raise DuplicateResourceError("Service with this name/detail already exists.")
-#     except SQLAlchemyError as e:
-#         # db.rollback() # Rollback for any other DB error
-#         logger.error(f"Database error during service creation: {e}")
-#         # Raise a generic DB error that the API layer will handle
-
-# def get_order_by_id(order_id:UUID , db: Session):
-#     order = db.query(Order).filter(Order.id == order_id).first()
-
-#     return order
-
-
-# def update_order_service(db:Session,order_id:UUID, payload:OrderCreate):
-#     order = db.query(Order).filter(Order.id == order_id).first()
-
-#     if not order:
-#         return None
-
-#     for field, value in payload.dict().items():
-#         setattr(order, field, value)
-
-#     db.commit()
-#     db.refresh(order)
-#     return order
-
-# def order_image(db:Session,order_id):
-#      # Check order exists
-#     order = db.query(Order).filter(Order.id == order_id).first()
-#     if not order:
-#         raise HTTPException(status_code=404, detail="Order not found")
-
-#     # Upload image
-#     saved_image = upload_order_image(db, order_id, file, order)
-#     return saved_image
-
-
-# def delete_order_service( db:Session,order_id: UUID,):
-#     order = db.query(Order).filter(Order.id == order_id).first()
-
-#     db.delete(order)
-#     db.commit()
-
-#     return True
 

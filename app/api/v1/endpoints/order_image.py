@@ -1,5 +1,4 @@
 # api/v1/order_images.py
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 # from sqlalchemy.orm import Session
 # from app.db.session import get_db
 # from app.services.image_service import upload_order_image
@@ -10,7 +9,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 
 # @router.post("/{order_id}/images", response_model=OrderImageResponse)
 # def upload_image(order_id, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    
+
 #     # Check order exists
 #     order = db.query(Order).filter(Order.id == order_id).first()
 #     if not order:
