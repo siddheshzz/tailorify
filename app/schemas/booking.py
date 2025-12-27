@@ -1,16 +1,17 @@
-from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class BookingBase(BaseModel):
     status: Optional[str] = "pending"
 
-class BookingCreate(BookingBase):
-    service_id:UUID
-    appointment_time: datetime
 
+class BookingCreate(BookingBase):
+    service_id: UUID
+    appointment_time: datetime
 
 
 class BookingResponse(BookingBase):

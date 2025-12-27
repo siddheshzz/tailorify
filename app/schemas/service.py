@@ -1,7 +1,7 @@
-from pydantic import BaseModel
 from typing import Optional
-
 from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class ServiceBase(BaseModel):
@@ -13,8 +13,10 @@ class ServiceBase(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = True
 
+
 class ServiceCreate(ServiceBase):
     pass
+
 
 class ServiceResponse(ServiceBase):
     id: UUID

@@ -17,5 +17,3 @@ class UploadUrlSchemaOut(BaseModel):
     url: str
     s3_object_path: str
     content_type: str = "application/octet-stream"
-
-

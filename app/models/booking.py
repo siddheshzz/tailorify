@@ -1,8 +1,11 @@
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, func
-from sqlalchemy.orm import relationship
-from app.models.base import Base
 import uuid
+
+from sqlalchemy import Column, DateTime, ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from app.models.base import Base
+
 
 class Booking(Base):
     __tablename__ = "bookings"
@@ -17,6 +20,3 @@ class Booking(Base):
     # # Relationships (optional, but useful for joins)
     users = relationship("User", back_populates="bookings")
     service = relationship("Service", back_populates="bookings")
-
-    
-

@@ -1,16 +1,23 @@
 import os
-import uuid
 from datetime import timedelta
+from types import SimpleNamespace
 
 import pytest
-from types import SimpleNamespace
 
 from app.services.s3_service import S3Service, S3ServiceSettings
 from minio import S3Error
 
 
 class DummyS3Error(S3Error):
-    def __init__(self, code: str, message: str = "", resource: str = "", request_id: str = "", host_id: str = "", response: object | None = None):
+    def __init__(
+        self,
+        code: str,
+        message: str = "",
+        resource: str = "",
+        request_id: str = "",
+        host_id: str = "",
+        response: object | None = None,
+    ):
         # Minio S3Error signature: (method, bucket_name, object_name, response)
         super().__init__(code, message, resource, request_id)
         self.code = code
@@ -110,7 +117,9 @@ def test_generate_download_url_happy_path(service, monkeypatch):
 
     service.minio_client.presigned_get_object = fake_presign
 
-    url = service.generate_download_url("orders/2024/01/01/abc", desired_filename="file.jpg", expiration_minutes=10)
+    url = service.generate_download_url(
+        "orders/2024/01/01/abc", desired_filename="file.jpg", expiration_minutes=10
+    )
     assert url == "http://example.com/presigned"
 
 
@@ -136,7 +145,9 @@ def test_generate_presigned_upload_url_with_extension(service, monkeypatch):
 
     service.minio_client.presigned_put_object = fake_put
 
-    url, obj_path = service.generate_presigned_upload_url(s3_object_path=None, expiration_minutes=5, file_extension=".jpg")
+    url, obj_path = service.generate_presigned_upload_url(
+        s3_object_path=None, expiration_minutes=5, file_extension=".jpg"
+    )
     assert url == "http://example.com/upload"
     assert obj_path.endswith(".jpg")
 
