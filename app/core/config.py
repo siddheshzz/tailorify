@@ -40,23 +40,23 @@ class Settings(BaseSettings):
     # S3_INTERNAL_URL:str
 
     # Storage Configuration
-    STORAGE_BACKEND: Literal["minio", "s3"] = "minio"  # Switch between MinIO and S3
+    STORAGE_BACKEND: Literal["minio", "s3"] = "s3"  # Switch between MinIO and S3
 
-    # MinIO Configuration (Local Development)
-    MINIO_ENDPOINT: str = "minio:9000"
-    MINIO_EXTERNAL_ENDPOINT: str = "localhost:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET_NAME: str = "tailorify"
-    MINIO_SECURE: bool = False
-    MINIO_USE_PROXY: bool = True
-    MINIO_INTERNAL_URL: str = "http://minio:9000"
+    # # MinIO Configuration (Local Development)
+    # MINIO_ENDPOINT: str = "minio:9000"
+    # MINIO_EXTERNAL_ENDPOINT: str = "localhost:9000"
+    # MINIO_ACCESS_KEY: str = "minioadmin"
+    # MINIO_SECRET_KEY: str = "minioadmin"
+    # MINIO_BUCKET_NAME: str = "tailorify"
+    # MINIO_SECURE: bool = False
+    # MINIO_USE_PROXY: bool = True
+    # MINIO_INTERNAL_URL: str = "http://minio:9000"
 
-    ## AWS S3 Configuration (Production)
-    # AWS_ACCESS_KEY_ID: str
-    # AWS_SECRET_ACCESS_KEY: str
-    # AWS_REGION: str
-    # AWS_S3_BUCKET_NAME: str
+    # AWS S3 Configuration (Production)
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_REGION: str
+    AWS_S3_BUCKET_NAME: str
 
     # File Upload Settings
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
@@ -67,10 +67,10 @@ class Settings(BaseSettings):
         "image/gif",
         "image/webp",
     ]
-    PRESIGNED_URL_EXPIRY_MINUTES: int = 360  # 6 hours
+    PRESIGNED_URL_EXPIRY_MINUTES: int = 30  # 6 hours
 
     # Security (For JWT)
-    SECRET_KEY: str = "SUPER_SECRET_CHANGE_ME_IN_PROD"
+    SECRET_KEY: str 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # Pydantic Settings Config
