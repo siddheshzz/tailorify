@@ -56,3 +56,9 @@ boto3==1.34.0  # AWS S3
 
 # Add if not present
 python-multipart==0.0.6  # For file uploads
+
+celery==5.3.6
+redis==5.0.1
+
+resend
+flower==2.0.1

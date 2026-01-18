@@ -1,6 +1,6 @@
 from typing import List, Literal, Union
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator,Field, EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     # API Metadata
     PROJECT_NAME: str = "Tailorify API"
     API_V1_STR: str = "/api/v1"
+    APP_VERSION:str = "1.0.0"
 
     # Environment Logic
     ENVIRONMENT: str = "development"  # or "production"
@@ -52,6 +53,77 @@ class Settings(BaseSettings):
     # MINIO_USE_PROXY: bool = True
     # MINIO_INTERNAL_URL: str = "http://minio:9000"
 
+     # Cache TTL Settings (in seconds)
+    CACHE_DEFAULT_TTL: int = 300  # 5 minutes
+    CACHE_PRODUCTS_TTL: int = 600  # 10 minutes
+    CACHE_SERVICES_TTL: int = 1800  # 30 minutes
+    CACHE_USER_PROFILE_TTL: int = 900  # 15 minutes
+    CACHE_ORDER_LIST_TTL: int = 180  # 3 minutes
+    
+    # ============================================
+    # Celery Configuration
+    # ============================================
+    CELERY_BROKER_URL: str = ""  # Will default to REDIS_URL
+    CELERY_RESULT_BACKEND: str = ""  # Will default to REDIS_URL
+    CELERY_TASK_TRACK_STARTED: bool = True
+    CELERY_TASK_TIME_LIMIT: int = 300  # 5 minutes max per task
+    CELERY_TASK_SOFT_TIME_LIMIT: int = 270  # Soft limit at 4.5 minutes
+    CELERY_WORKER_PREFETCH_MULTIPLIER: int = 4
+    CELERY_WORKER_MAX_TASKS_PER_CHILD: int = 1000
+    CELERY_TASK_ACKS_LATE: bool = True
+    CELERY_RESULT_EXPIRES: int = 3600  # Results expire after 1 hour
+
+    REDIS_URL: str = "redis://redis:6379/0"
+    
+    @field_validator("CELERY_BROKER_URL", mode="before")
+    @classmethod
+    def set_celery_broker(cls, v: str, info) -> str:
+        """Use Redis URL if Celery broker not explicitly set."""
+        if not v and info.data.get("REDIS_URL"):
+            return info.data["REDIS_URL"]
+        return v or ""
+    
+    @field_validator("CELERY_RESULT_BACKEND", mode="before")
+    @classmethod
+    def set_celery_backend(cls, v: str, info) -> str:
+        """Use Redis URL if Celery backend not explicitly set."""
+        if not v and info.data.get("REDIS_URL"):
+            return info.data["REDIS_URL"]
+        return v or ""
+    
+    # ============================================
+    # Email Configuration (Resend)
+    # ============================================
+    RESEND_API_KEY: str
+    RESEND_FROM_EMAIL: str
+    RESEND_FROM_NAME: str
+    
+    # Email Templates (Resend Template IDs)
+    EMAIL_TEMPLATE_ORDER_CONFIRMATION: str = ""  # Optional: Template ID for order confirmation
+    EMAIL_TEMPLATE_WELCOME: str = ""  # Optional: Template ID for welcome email
+    EMAIL_TEMPLATE_CAMPAIGN: str = ""  # Optional: Template ID for campaigns
+    
+
+    # ============================================
+    # Rate Limiting
+    # ============================================
+    RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_ENABLED: bool = True
+    
+    # ============================================
+    # Logging Configuration
+    # ============================================
+    LOG_LEVEL: str = Field(default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    LOG_FORMAT: str = "json"  # or "text"
+    
+    # ============================================
+    # Feature Flags
+    # ============================================
+    ENABLE_CACHING: bool = True
+    ENABLE_EMAIL_NOTIFICATIONS: bool = True
+    ENABLE_ANALYTICS: bool = False
+
+
     # AWS S3 Configuration (Production)
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
@@ -72,6 +144,9 @@ class Settings(BaseSettings):
     # Security (For JWT)
     SECRET_KEY: str 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+
+
+
 
     # Pydantic Settings Config
     model_config = SettingsConfigDict(

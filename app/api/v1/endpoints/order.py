@@ -3,6 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.security import HTTPBearer
+from app.core.cache import cache, invalidate_cache
+from app.tasks.email_tasks import send_order_confirmation_email
 
 from app.core.dependencies import OrderServiceDep
 from app.core.exceptions import DuplicateResourceError, InternalDatabaseError
@@ -10,9 +12,13 @@ from app.core.security import RoleChecker, get_current_user
 from app.schemas.order import OrderCreate, OrderResponse
 from app.schemas.order_image import OrderImageResponse
 from app.schemas.user import UserAuthPayload
+from app.core.config import settings
 from app.services.image_service import (
     regenerate_download_urls,
 )
+import logging
+logger = logging.getLogger(__name__)
+
 
 allow_admin = RoleChecker(["admin"])
 
@@ -27,7 +33,37 @@ async def create_order(
     current_user: UserAuthPayload = Depends(get_current_user),
 ):
     try:
-        return await service.add(order)
+        print("IN POST ORDER")
+        new_order = await service.add(order)
+        
+        # Invalidate relevant caches
+        await invalidate_cache("orders", user_id=str(current_user.id))
+        await invalidate_cache("orders:list")
+        
+        # CRITICAL: Send order confirmation email asynchronously (fire-and-forget)
+        # This does NOT block the response - task is queued immediately and returns
+        if settings.ENABLE_EMAIL_NOTIFICATIONS:
+            try:
+
+                send_order_confirmation_email.delay(
+                    order_id=str(new_order.id),
+                    customer_email=current_user.email,
+                    customer_name="User",
+                    order_details={
+                        "service_name": service.name if hasattr(service, 'name') else "Service",
+                        "description": new_order.description,
+                        "quoted_price": f"${new_order.quoted_price}",
+                        "estimated_completion": new_order.estimated_completion.strftime("%B %d, %Y"),
+                        "order_number": f"ORD-{str(new_order.id)[:8].upper()}"
+                    }
+                )
+                logger.info(f"Order confirmation email task queued for order {new_order.id}")
+            except Exception as e:
+                # Log error but don't fail order creation
+                logger.error(f"Failed to queue order confirmation email: {e}")
+
+        
+    
     except DuplicateResourceError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except InternalDatabaseError:
@@ -35,6 +71,7 @@ async def create_order(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected database error occurred during order creation.",
         )
+    return new_order
 
 
 @router.get(

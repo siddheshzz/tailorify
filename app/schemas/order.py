@@ -11,8 +11,8 @@ class OrderBase(BaseModel):
     quoted_price: Decimal
     actual_price: Optional[Decimal] = None
     notes: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
+    priority: Optional[str] = "normal"
+    status: Optional[str] = "pending"
 
 
 class OrderCreate(OrderBase):

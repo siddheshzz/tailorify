@@ -9,6 +9,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+# from app.core.cache import cache, invalidate_cache
 
 from app.core.config import settings as app_config
 from app.core.exceptions import DatabaseCommunicationError, OrderNotFoundError
@@ -63,12 +64,17 @@ class OrderService:
             )
 
     async def add(self, order) -> Order:
+        print("IN SERVICE ORDER")
         ser = Order(**order.model_dump())
+        print("AFTER DUMP ORDER")
 
         self.session.add(ser)
 
         await self.session.commit()
         await self.session.refresh(ser)
+
+        
+
 
         return ser
 

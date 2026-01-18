@@ -36,15 +36,37 @@ services:
   #     interval: 30s
   #     timeout: 20s
   #     retries: 3
+  redis:
+    image: redis:7-alpine
+    container_name: tailorify-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tailorify-network
+
   backend:
     build: .
     container_name: tailorify-backend
     env_file:
     - .env.local
+    environment:
+    - PYTHONUNBUFFERED=1
+    - REDIS_URL=redis://redis:6379/0
+    - CELERY_BROKER_URL=redis://redis:6379/1
+    - CELERY_RESULT_BACKEND=redis://redis:6379/2
     ports:
     - "8000:8000"
     depends_on:
     - postgres
+    - redis
     # - minio
     volumes:
     - .:/app
@@ -52,9 +74,96 @@ services:
     - tailorify-network
     command: >
       sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+  
+  # worker:
+  #   build: .
+  #   container_name: tailorify-worker
+  #   env_file:
+  #     - .env.local
+  #   volumes:
+  #     - .:/code
+  #   depends_on:
+  #     - redis
+  #     - postgres
+  #   networks:
+  #     - tailorify-network
+  #   # Replace 'app.worker.celery' with the actual path to your celery object
+  #   command: celery -A app.worker.celery_app worker --loglevel=info
+  # ============================================
+  # Celery Worker (Email Queue)
+  # ============================================
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tailorify-celery-worker
+    command: celery -A app.core.celery_app worker --loglevel=info --queues=emails,campaigns --concurrency=4
+    env_file:
+      - .env.local
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tailorify-network
+    restart: unless-stopped
+
+  # ============================================
+  # Celery Beat (Scheduled Tasks)
+  # ============================================
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tailorify-celery-beat
+    command: celery -A app.core.celery_app beat --loglevel=info
+    env_file:
+      - .env.local
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tailorify-network
+    restart: unless-stopped
+
+  # ============================================
+  # Flower (Celery Monitoring - Optional)
+  # ============================================
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tailorify-flower
+    command: celery -A app.core.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env.local
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tailorify-network
+    restart: unless-stopped
 volumes:
   postgres_data:
   minio_data:
+  redis_data:
 networks:
   tailorify-network:
     driver: bridge

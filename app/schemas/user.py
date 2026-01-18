@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserRole(str, Enum):
@@ -21,6 +21,8 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
 
+    
+
 
 # -----------------------------------------
 # Admin-only: Create a new user
@@ -29,6 +31,43 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
     user_type: UserRole = UserRole.CLIENT
     # is_active: bool
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        """Validate that name is not just whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Name cannot be empty or just whitespace")
+        return v.strip()
+    
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password strength."""
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        if not any(c.isalpha() for c in v):
+            raise ValueError("Password must contain at least one letter")
+        return v
+    
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        """Validate phone number format."""
+        if v and not v.strip():
+            return None  # Convert empty string to None
+        return v.strip() if v else None
+    
+    @field_validator("address")
+    @classmethod
+    def validate_address(cls, v: Optional[str]) -> Optional[str]:
+        """Validate address."""
+        if v and not v.strip():
+            return None  # Convert empty string to None
+        return v.strip() if v else None
+
 
 
 # -----------------------------------------
