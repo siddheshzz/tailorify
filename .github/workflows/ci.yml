@@ -34,19 +34,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create .env file from secrets
+        run: |
+          # echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          # echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          # echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          # echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          # echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
+          # # Add all other required variables here
+          # Dumps all variables defined in 'env' into a .env file for Docker Compose
+          printenv > .env
+          # Creates dummy file to satisfy docker-compose env_file requirements
+          touch .env.local
+
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1
 
       - name: Build and Start Services
         run: |
-          # Create an empty .env.local to satisfy docker-compose if needed
-          touch .env.local
-          # Clean existing containers & volumes
+          # # Create an empty .env.local to satisfy docker-compose if needed
+          # touch .env.local
+          # # Clean existing containers & volumes
+          # docker compose down --volumes
+          # # (Optional) Fresh build, skip cache for dependencies
+          # docker compose build --no-cache
+          # # Start services in detached mode
+          # docker compose up -d
+          # Clean state
           docker compose down --volumes
-          # (Optional) Fresh build, skip cache for dependencies
+          # Build without cache to ensure fresh dependencies
           docker compose build --no-cache
-          # Start services in detached mode
+          # Start in background
           docker compose up -d
+          # Wait for Database/Redis to be ready to accept connections
+          echo "Waiting for services to initialize..."
+          sleep 10
 
       - name: Run Pytest
         # Using -T because GitHub Actions has no TTY
