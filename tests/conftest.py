@@ -1,67 +1,20 @@
-# import asyncio
-# import os
-# import sys
-# from typing import AsyncGenerator
+import os
 
-# import pytest
-# from httpx import AsyncClient
-
-# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-# from app.db.session import get_session as get_db
-# from app.main import app
-# from app.models.base import Base
-
-# # Point this to your local test container
-# TEST_DATABASE_URL = "postgresql+asyncpg://user:password@db_test:5432/test_db"
-
-# engine_test = create_async_engine(TEST_DATABASE_URL, echo=False)
-# AsyncSessionLocal = async_sessionmaker(
-#     engine_test, expire_on_commit=False, class_=AsyncSession
-# )
-
-
-# @pytest.fixture(autouse=True)
-# async def setup_db():
-#     async with engine_test.begin() as conn:
-#         # This ensures PG-specific types like UUID and Enum work
-#         await conn.run_sync(Base.metadata.create_all)
-#     yield
-#     async with engine_test.begin() as conn:
-#         await conn.run_sync(Base.metadata.drop_all)
-
-
-# # ... keep the override_get_db and client fixtures from before ...
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     loop = asyncio.get_event_loop_policy().new_event_loop()
-#     yield loop
-#     loop.close()
-
-
-# # @pytest.fixture(autouse=True)
-# # async def setup_db():
-# #     """Create a clean database for every test run."""
-# #     async with engine_test.begin() as conn:
-# #         await conn.run_sync(Base.metadata.drop_all)
-# #         await conn.run_sync(Base.metadata.create_all)
-# #     yield
-# #     async with engine_test.begin() as conn:
-# #         await conn.run_sync(Base.metadata.drop_all)
-
-
-# async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-#     async with AsyncSessionLocal() as session:
-#         yield session
-
-
-# # Dependency Override: Tell FastAPI to use the Test DB
-# app.dependency_overrides[get_db] = override_get_db
-
-
-# @pytest.fixture
-# async def client() -> AsyncGenerator[AsyncClient, None]:
-#     """Async client for hitting endpoints."""
-#     async with AsyncClient(app=app, base_url="http://test") as ac:
-#         yield ac
+# ---------------------------------------------------------------------------
+# Environment bootstrap — MUST execute before any app module is imported.
+# app.core.config.Settings() is instantiated at module level and raises a
+# ValidationError if required fields (SECRET_KEY, AWS_*, RESEND_*, …) are
+# missing.  setdefault keeps any value already present (e.g. from CI .env).
+# ---------------------------------------------------------------------------
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+os.environ.setdefault("AWS_ACCESS_KEY_ID", "test-aws-key")
+os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "test-aws-secret")
+os.environ.setdefault("AWS_REGION", "ap-south-1")
+os.environ.setdefault("AWS_S3_BUCKET_NAME", "test-bucket")
+os.environ.setdefault("RESEND_API_KEY", "test-resend-key")
+os.environ.setdefault("RESEND_FROM_EMAIL", "test@resend.dev")
+os.environ.setdefault("RESEND_FROM_NAME", "Test")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("ENABLE_CACHING", "False")
+os.environ.setdefault("ENABLE_EMAIL_NOTIFICATIONS", "False")

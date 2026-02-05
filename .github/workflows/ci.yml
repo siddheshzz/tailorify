@@ -36,16 +36,9 @@ jobs:
 
       - name: Create .env file from secrets
         run: |
-          # echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
-          # echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          # echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-          # echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
-          # echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
-          # # Add all other required variables here
-          # Dumps all variables defined in 'env' into a .env file for Docker Compose
-          printenv > .env
-          # Creates dummy file to satisfy docker-compose env_file requirements
-          touch .env.local
+          # Dump all env vars (including secrets resolved from the job `env` block)
+          # into .env.local — this is the file docker-compose backend service actually reads
+          printenv > .env.local
 
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1

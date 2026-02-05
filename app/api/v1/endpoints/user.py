@@ -54,7 +54,10 @@ async def login(credentials: UserLogin, service: UserServiceDep):
 async def get_my_profile(
     service: UserServiceDep, current_user: UserAuthPayload = Depends(get_current_user)
 ):
+    
     id = UUID(current_user.id)
+    if not id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await service.get(id)
 
 
