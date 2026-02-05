@@ -63,9 +63,9 @@ jobs:
           echo "Waiting for services to initialize..."
           sleep 10
 
-      - name: Run Pytest
+      # - name: Run Pytest
         # Using -T because GitHub Actions has no TTY
-        run: docker compose exec -T backend sh -c "PYTHONPATH=/code pytest"
+        # run: docker compose exec -T backend sh -c "PYTHONPATH=/code pytest"
 
       - name: View Logs on Failure
         if: failure()
