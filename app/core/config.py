@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Database
     # This will be validated to ensure it's a valid Postgres URL
-    DATABASE_URL: str
+    DATABASE_URL: str =  "sqlite+aiosqlite:///./test.db"
 
     # CORS
     # Converts a string like "http://localhost:3000,https://app.com" into a list
