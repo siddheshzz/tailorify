@@ -28,6 +28,7 @@ class OrderResponse(OrderBase):
     id: UUID
     client_id: UUID
     service_id: UUID
+    service_name: str
     requested_date: datetime
     estimated_completion: datetime
     actual_completion: Optional[datetime]

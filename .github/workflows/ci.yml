@@ -1,0 +1,76 @@
+name: Tailorify CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: Tailorify
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      ALGORITHM: HS256
+      STORAGE_BACKEND: s3
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-1
+      AWS_S3_BUCKET_NAME: tailorify-dev
+      MAX_UPLOAD_SIZE: 5242880
+      PRESIGNED_URL_EXPIRY_MINUTES: 360
+      BACKEND_CORS_ORIGINS: '["https://siddheshgg.xyz/","https://tailorify-frontend-cp6.pages.dev/","tailorify-frontend-cp6.pages.dev"]'
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM_EMAIL: onboarding@resend.dev
+      RESEND_FROM_NAME: Rama
+      ENABLE_EMAIL_NOTIFICATIONS: "True"
+      REDIS_URL: redis://redis:6379/0  
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file from secrets
+        run: |
+          # Dump all env vars (including secrets resolved from the job `env` block)
+          # into .env.local — this is the file docker-compose backend service actually reads
+          printenv > .env.local
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+
+      - name: Build and Start Services
+        run: |
+          # # Create an empty .env.local to satisfy docker-compose if needed
+          # touch .env.local
+          # # Clean existing containers & volumes
+          # docker compose down --volumes
+          # # (Optional) Fresh build, skip cache for dependencies
+          # docker compose build --no-cache
+          # # Start services in detached mode
+          # docker compose up -d
+          # Clean state
+          docker compose down --volumes
+          # Build without cache to ensure fresh dependencies
+          docker compose build --no-cache
+          # Start in background
+          docker compose up -d
+          # Wait for Database/Redis to be ready to accept connections
+          echo "Waiting for services to initialize..."
+          sleep 10
+
+      # - name: Run Pytest
+        # Using -T because GitHub Actions has no TTY
+        # run: docker compose exec -T backend sh -c "PYTHONPATH=/code pytest"
+
+      - name: View Logs on Failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop and Remove Containers
+        if: always()
+        run: docker compose down --volumes

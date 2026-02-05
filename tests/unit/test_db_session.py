@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 # Target module
@@ -62,13 +60,10 @@ def restore_module_state():
 #     assert calls["max_overflow"] == 20
 
 
-def test_get_session_yields_async_session_and_closes_on_success(monkeypatch):
+async def test_get_session_yields_async_session_and_closes_on_success(monkeypatch):
     events = {"entered": False, "exited": False, "closed": False}
 
     class DummyAsyncSession:
-        def __init__(self):
-            self.closed = False
-
         async def __aenter__(self):
             events["entered"] = True
             return self
@@ -81,33 +76,26 @@ def test_get_session_yields_async_session_and_closes_on_success(monkeypatch):
 
         async def close(self):
             events["closed"] = True
-            self.closed = True
 
-    def fake_sessionmaker(**kwargs):
-        # Return a callable that produces our DummyAsyncSession and supports async context manager via __aenter__/__aexit__
-        def factory():
-            return DummyAsyncSession()
+    def factory():
+        return DummyAsyncSession()
 
-        return factory
+    monkeypatch.setattr(db_session, "AsyncSessionLocal", factory)
 
-    monkeypatch.setattr(db_session, "AsyncSessionLocal", fake_sessionmaker())
-
-    async def run():
-        agen = db_session.get_session()
-        session = None
-        async for s in agen:
-            session = s
-            break
-        assert isinstance(session, DummyAsyncSession)
-
-    asyncio.get_event_loop().run_until_complete(run())
-
+    # Mimic how FastAPI consumes the dependency: anext to get session, aclose to finish
+    agen = db_session.get_session()
+    session = await agen.__anext__()
+    assert isinstance(session, DummyAsyncSession)
     assert events["entered"] is True
+
+    # Closing the generator triggers the finally block
+    await agen.aclose()
+
     assert events["exited"] is True
     assert events["closed"] is True
 
 
-def test_get_session_rolls_back_and_closes_on_exception(monkeypatch):
+async def test_get_session_rolls_back_and_closes_on_exception(monkeypatch):
     events = {"rolled_back": False, "closed": False}
 
     class DummyAsyncSession:
@@ -123,41 +111,18 @@ def test_get_session_rolls_back_and_closes_on_exception(monkeypatch):
         async def close(self):
             events["closed"] = True
 
-    class ExplodingIterator:
-        def __init__(self, session):
-            self.session = session
-            self.yielded = False
+    def factory():
+        return DummyAsyncSession()
 
-        def __aiter__(self):
-            return self
+    monkeypatch.setattr(db_session, "AsyncSessionLocal", factory)
 
-        async def __anext__(self):
-            if not self.yielded:
-                self.yielded = True
-                # Simulate exception in consumer after first yield
-                raise RuntimeError("consumer failure")
-            raise StopAsyncIteration
+    # Mimic how FastAPI handles an exception after the yield:
+    # athrow injects the exception at the yield point, triggering except + finally
+    agen = db_session.get_session()
+    await agen.__anext__()  # advance to yield
 
-    def fake_sessionmaker(**kwargs):
-        def factory():
-            return DummyAsyncSession()
-
-        return factory
-
-    monkeypatch.setattr(db_session, "AsyncSessionLocal", fake_sessionmaker())
-
-    async def consume_with_exception():
-        agen = db_session.get_session()
-        # Enter the context and then trigger exception to exercise rollback path
-        try:
-            # Advance to first yield to create session
-            async for _ in agen:
-                # immediately raise to trigger except/finally in get_session
-                raise RuntimeError("force error")
-        except RuntimeError:
-            pass
-
-    asyncio.get_event_loop().run_until_complete(consume_with_exception())
+    with pytest.raises(RuntimeError):
+        await agen.athrow(RuntimeError("consumer failure"))
 
     assert events["rolled_back"] is True
     assert events["closed"] is True

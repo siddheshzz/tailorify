@@ -22,6 +22,7 @@ class Order(Base):
     service_id = Column(
         UUID(as_uuid=True), ForeignKey("services.id",ondelete="RESTRICT"), nullable=False, index=True
     )
+    # service_name : Optional
 
     # Details
     status = Column(
@@ -74,7 +75,10 @@ class Order(Base):
     def final_price(self) :
         """Get final price (actual or quoted)."""
         return self.actual_price if self.actual_price else self.quoted_price
-    
+    @property
+    def service_name(self) -> str:
+        return self.service.name if self.service else "Unknown"
+
     def to_dict(self) -> dict:
         """Convert order to dictionary for caching."""
         return {
