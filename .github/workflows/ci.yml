@@ -72,7 +72,7 @@ jobs:
 
       - name: Run Pytest
         # Using -T because GitHub Actions has no TTY
-        run: docker compose exec -T backend pytest
+        run: docker compose exec -T backend sh -c "PYTHONPATH=/code pytest"
 
       - name: View Logs on Failure
         if: failure()
