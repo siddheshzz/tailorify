@@ -22,7 +22,13 @@ jobs:
       MAX_UPLOAD_SIZE: 5242880
       PRESIGNED_URL_EXPIRY_MINUTES: 360
       BACKEND_CORS_ORIGINS: '["https://siddheshgg.xyz/","https://tailorify-frontend-cp6.pages.dev/","tailorify-frontend-cp6.pages.dev"]'
-
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM_EMAIL: onboarding@resend.dev
+      RESEND_FROM_NAME: Rama
+      ENABLE_EMAIL_NOTIFICATIONS: "True"
+      REDIS_URL: redis://redis:6379/0  
 
     steps:
       - name: Checkout code
