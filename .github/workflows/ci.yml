@@ -1,0 +1,39 @@
+name: Tailorify CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+
+      - name: Build and Start Services
+        run: |
+          # Clean existing containers & volumes
+          docker compose down --volumes
+          # (Optional) Fresh build, skip cache for dependencies
+          docker compose build --no-cache
+          # Start services in detached mode
+          docker compose up -d
+
+      - name: Run Pytest
+        # Using -T because GitHub Actions has no TTY
+        run: docker compose exec -T backend pytest
+
+      - name: View Logs on Failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop and Remove Containers
+        if: always()
+        run: docker compose down --volumes
