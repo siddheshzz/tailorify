@@ -33,6 +33,8 @@ jobs:
 
       - name: Build and Start Services
         run: |
+          # Create an empty .env.local to satisfy docker-compose if needed
+          touch .env.local
           # Clean existing containers & volumes
           docker compose down --volumes
           # (Optional) Fresh build, skip cache for dependencies
