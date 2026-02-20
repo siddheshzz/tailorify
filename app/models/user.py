@@ -17,6 +17,8 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
     first_name = Column(String, nullable=False)
+    # Just an example
+    middle_name = Column(String, nullable=True)
     last_name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     address = Column(String, nullable=True)
