@@ -2,7 +2,6 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from fastapi.security import HTTPBearer
 from app.core.cache import cache, invalidate_cache
 from app.tasks.email_tasks import send_order_confirmation_email
 
@@ -23,7 +22,6 @@ logger = logging.getLogger(__name__)
 allow_admin = RoleChecker(["admin"])
 
 router = APIRouter()
-security = HTTPBearer()
 
 
 @router.post("/", response_model=OrderResponse)

@@ -4,10 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from app.core.dependencies import BookingServiceDep
-from app.core.security import (
-    JWTBearer,
-    get_current_user,
-)
+from app.core.security import get_current_user
 
 # from app.services.booking_service import create_booking, get_bookings_by_user
 from app.models.user import User
@@ -16,7 +13,7 @@ from app.schemas.booking import BookingCreate, BookingResponse
 router = APIRouter()
 
 
-@router.post("/", response_model=BookingResponse, dependencies=[Depends(JWTBearer())])
+@router.post("/", response_model=BookingResponse)
 async def make_booking(
     booking: BookingCreate,
     service: BookingServiceDep,
@@ -26,9 +23,7 @@ async def make_booking(
     return await service.add(booking, UUID(user_id))
 
 
-@router.get(
-    "/", response_model=List[BookingResponse], dependencies=[Depends(JWTBearer())]
-)
+@router.get("/", response_model=List[BookingResponse])
 async def list_bookings(
     service: BookingServiceDep,
     current_user: User = Depends(get_current_user),
