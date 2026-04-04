@@ -96,6 +96,65 @@ tailor-backend/
 
 ```
 
+```
+
+┌─────────────┐          ┌──────────────┐
+│   services  │          │    users     │
+│─────────────│          │──────────────│
+│ id (PK)     │          │ id (PK)      │
+│ name        │          │ email        │
+│ base_price  │          │ hashed_pw    │
+│ category    │          │ first_name   │
+│ ...         │          │ user_type    │
+└──────┬──────┘          │ is_active    │
+       │                 └──┬──────────┘
+       │  1                 │ 1
+       │                    │
+       │ ┌──────────────────┤
+       │ │                  │
+       ▼ ▼ N                │ N
+┌────────────────┐          │
+│    orders      │          │
+│────────────────│          │
+│ id (PK)        │          │
+│ client_id (FK)─┼──────────┘
+│ service_id(FK)─┼──── (above)
+│ status         │
+│ quoted_price   │
+│ description    │
+│ ...            │
+└───────┬────────┘
+        │ 1
+        │
+        ▼ N
+┌────────────────┐
+│  order_images  │
+│────────────────│
+│ id (PK)        │
+│ order_id  (FK)─┼──── orders.id
+│ uploaded_by(FK)┼──── users.id
+│ s3_url         │
+│ image_type     │
+└────────────────┘
+
+┌────────────────┐
+│    bookings    │          (separate — not linked to orders)
+│────────────────│
+│ id (PK)        │
+│ user_id   (FK)─┼──── users.id
+│ service_id(FK)─┼──── services.id
+│ status         │
+│ appointment_time│
+└────────────────┘
+
+
+```
+
+
+
+
+
+
 
 
 
@@ -115,15 +174,6 @@ docker compose up
 
 
 
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzYzNjE2OTMyfQ.OwqCv6yfcjhMYttjxo6ogxG1yw4GlSyZyXhaw7VuKqc",
-  "token_type": "bearer"
-}
-
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzYzNjE3MDcwfQ.-HVEBCycp01hkdMVT36c1GGCs2Cm28G_60oTD2LqXNk",
-  "token_type": "bearer"
-}
 
 
 The db is created in container so we cannot see it.
