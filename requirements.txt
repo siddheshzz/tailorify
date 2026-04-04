@@ -1,20 +1,3 @@
-# fastapi
-# uvicorn[standard]
-# python-dotenv
-# sqlalchemy
-# passlib[bcrypt]==1.7.4
-# bcrypt==3.2.2
-# python-jose[cryptography]
-# pydantic[email]
-# asyncpg
-# python-multipart
-# pytest
-# minio>=7.2.13
-# pydantic-settings>=2.7.1
-# pytest-mock
-# alembic
-
-
 fastapi
 uvicorn[standard]
 python-dotenv
@@ -39,7 +22,6 @@ python-multipart
 
 # Storage
 minio>=7.2.13
-pydantic-settings>=2.7.1
 pytest-mock
 httpx
 

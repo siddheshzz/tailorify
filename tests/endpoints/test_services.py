@@ -129,16 +129,11 @@ class TestDeleteService:
         )
         assert res.status_code == 200
 
-    def test_no_role_guard_any_auth_user_can_delete(
+    def test_client_is_rejected(
         self, http_client, client_headers, client_payload
     ):
-        # NOTE: DELETE /{id} only has Depends(JWTBearer()), no RoleChecker.
-        # Any authenticated user (including clients) is permitted.
         app.dependency_overrides[get_current_user] = lambda: client_payload
-        app.dependency_overrides[get_service] = lambda: SimpleNamespace(
-            remove=_async(True)
-        )
         res = http_client.delete(
             f"/api/v1/service/{uuid.uuid4()}", headers=client_headers
         )
-        assert res.status_code == 200
+        assert res.status_code == 403

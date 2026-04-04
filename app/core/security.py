@@ -2,10 +2,9 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
-# from fastapi import Depends, HTTP
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -16,8 +15,6 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-security = HTTPBearer()
 
 
 def get_password_hash(password):
@@ -30,7 +27,6 @@ def verify_password(plain_password, hashed_password):
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    # expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": int(expire.timestamp())})
@@ -67,28 +63,13 @@ class JWTBearer(HTTPBearer):
                 status_code=403, detail="Invalid authentication scheme."
             )
 
-            # Decode the JWT here
         payload = decode_access_token(credentials.credentials)
         if not payload:
             raise HTTPException(status_code=403, detail="Invalid or expired token.")
         return payload
 
 
-def get_token_payload(auth: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """
-    This is the core dependency. It handles the extraction and decoding.
-    It's type-safe because it doesn't override base classes.
-    """
-    payload = decode_access_token(auth.credentials)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
-    return payload
-
-
-def get_current_user(payload: dict = Depends(get_token_payload)) -> UserAuthPayload:
+def get_current_user(payload: dict = Depends(JWTBearer())) -> UserAuthPayload:
     user_id = payload.get("user_id")
     user_type = payload.get("user_type")
     user_email = payload.get("user_email")
@@ -96,7 +77,7 @@ def get_current_user(payload: dict = Depends(get_token_payload)) -> UserAuthPayl
     if not user_id or not user_type:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Token payload is missing required user identity fields.",
+            detail="Could not validate credentials",
         )
     return UserAuthPayload(
         id=str(user_id),
@@ -114,5 +95,4 @@ class RoleChecker:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
             )
-        # If successful, return the payload (or the user object if you prefer)
         return current_user

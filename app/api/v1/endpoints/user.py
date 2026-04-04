@@ -33,7 +33,11 @@ async def register(user_in: UserCreate, service: UserServiceDep):
     user_in.user_type = UserRole.CLIENT
     user = await service.add(user_in)
 
-    token = create_access_token({"sub": str(user.id), "role": user.user_type})
+    token = create_access_token(
+        {"user_email": user.email, "user_type": user.user_type, "user_id": str(user.id)}
+    )
+
+        # {"sub": str(user.id), "role": user.user_type})
     return {"access_token": token, "token_type": "bearer"}
 
 
